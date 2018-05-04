@@ -10,7 +10,6 @@ type RequestHandler func(RequestResponder) Response
 type Server interface {
 	SetHandler(methodName string, handler RequestHandler)
 	HandleRequest(request RequestResponder) Response
-	HandleRequestWithState(request RequestResponder, state State) Response
 	Handle(jsonRequest []byte) []Response
 	HandleWithState(jsonRequest []byte, state State) []Response
 	GetHandler(methodName string) RequestHandler
