@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"regexp"
 	"testing"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestErrorMessageForCode(t *testing.T) {
@@ -325,6 +326,7 @@ func newTestServer() *jsonrpc.SimpleServer {
 	server.SetHandler("notify_hello", notifyHello)
 	server.SetHandler("get_data", getData)
 	server.SetHandler("panic", forcePanic)
+	server.SetHandler("handlerWithState", handlerWithState)
 
 	return server
 }
@@ -366,4 +368,17 @@ func forcePanic(request jsonrpc.RequestResponder) jsonrpc.Response {
 	panic("uh-oh!")
 
 	return request.NewSuccessResponse(nil)
+}
+
+func handlerWithState(request jsonrpc.RequestResponder) jsonrpc.Response {
+	return request.NewSuccessResponse(request.State("foo"))
+}
+
+func TestStatefulRequestMissingKey(t *testing.T) {
+	server := newTestServer()
+	r := `{"jsonrpc": "2.0", "method": "handlerWithState", "params": [42, 23], "id": 1}`
+	responses := server.Handle([]byte(r))
+
+	assert.Len(t, responses, 1)
+	assert.Nil(t, responses[0].Result())
 }

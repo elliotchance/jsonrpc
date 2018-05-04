@@ -16,6 +16,7 @@ type Request interface {
 	Method() string
 	Params() interface{}
 	Id() interface{}
+	State(key string) interface{}
 }
 
 // Allows a request to produce responses. These are convenience functions so
@@ -58,6 +59,10 @@ func (request *request) Params() interface{} {
 
 func (request *request) Id() interface{} {
 	return request.RequestId
+}
+
+func (request *request) State(key string) interface{} {
+	return nil
 }
 
 func (request *request) NewSuccessResponse(result interface{}) Response {
