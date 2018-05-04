@@ -382,3 +382,15 @@ func TestStatefulRequestMissingKey(t *testing.T) {
 	assert.Len(t, responses, 1)
 	assert.Nil(t, responses[0].Result())
 }
+
+func TestStatefulRequestWithKey(t *testing.T) {
+	server := newTestServer()
+	r := `{"jsonrpc": "2.0", "method": "handlerWithState", "params": [42, 23], "id": 1}`
+	state := jsonrpc.State{
+		"foo": "bar",
+	}
+	responses := server.HandleWithState([]byte(r), state)
+
+	assert.Len(t, responses, 1)
+	assert.Equal(t, "bar", responses[0].Result())
+}
