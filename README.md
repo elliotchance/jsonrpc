@@ -48,7 +48,7 @@ The JSON bytes could contain a single request or an array of requests (as
 described in JSON-RPC 2.0). The number of responses returned may be zero or more
 depending on if the requests are notifications.
 
-There is no order guaranteed on the responses. You should use `Id()` to pair
+There is no guaranteed order on the responses. You should use `Id()` to pair
 responses with the appropriate request.
 
 ## Stateful Requests

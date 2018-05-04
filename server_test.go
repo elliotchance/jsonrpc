@@ -394,3 +394,8 @@ func TestStatefulRequestWithKey(t *testing.T) {
 	assert.Len(t, responses, 1)
 	assert.Equal(t, "bar", responses[0].Result())
 }
+
+func TestSimpleServerIsAServer(t *testing.T) {
+	server := newTestServer()
+	assert.Implements(t, (*jsonrpc.Server)(nil), server)
+}
