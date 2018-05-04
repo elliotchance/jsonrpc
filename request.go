@@ -19,6 +19,10 @@ type Request interface {
 	State(key string) interface{}
 }
 
+// State can be optionally provided with Handle requests to pass extra state to
+// the handler for that individual request.
+type State map[string]interface{}
+
 // Allows a request to produce responses. These are convenience functions so
 // that the request ID (an potentially version) are set correctly in the
 // response.
@@ -43,6 +47,7 @@ type request struct {
 	RequestMethod  string      `json:"method"`
 	RequestParams  interface{} `json:"params,omitempty"`
 	RequestId      interface{} `json:"id"`
+	requestState   State
 }
 
 func (request *request) Version() string {
@@ -62,7 +67,7 @@ func (request *request) Id() interface{} {
 }
 
 func (request *request) State(key string) interface{} {
-	return nil
+	return request.requestState[key]
 }
 
 func (request *request) NewSuccessResponse(result interface{}) Response {
@@ -97,13 +102,18 @@ func (request *request) String() string {
 //
 // If params is nil then it will not be included, other acceptable types are an
 // array or map for ordered and named-parameters respectively.
-func NewRequestResponder(version string, id interface{}, method string, params interface{}) RequestResponder {
+func NewRequestResponderWithState(version string, id interface{}, method string, params interface{}, state State) RequestResponder {
 	return &request{
 		RequestVersion: version,
 		RequestId:      id,
 		RequestMethod:  method,
 		RequestParams:  params,
+		requestState:   state,
 	}
+}
+
+func NewRequestResponder(version string, id interface{}, method string, params interface{}) RequestResponder {
+	return NewRequestResponderWithState(version, id, method, params, State{})
 }
 
 // Use this with NewRequestResponder() to generate a random IDs for your

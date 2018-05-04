@@ -10,7 +10,9 @@ type RequestHandler func(RequestResponder) Response
 type Server interface {
 	SetHandler(methodName string, handler RequestHandler)
 	HandleRequest(request RequestResponder) Response
+	HandleRequestWithState(request RequestResponder, state State) Response
 	Handle(jsonRequest []byte) []Response
+	HandleWithState(jsonRequest []byte, state State) []Response
 	GetHandler(methodName string) RequestHandler
 }
 
@@ -79,7 +81,7 @@ func (server *SimpleServer) HandleRequest(request RequestResponder) (response Re
 	return handler(request)
 }
 
-func (server *SimpleServer) handleSingle(jsonRequest []byte, isPartOfBatch bool) Response {
+func (server *SimpleServer) handleSingle(jsonRequest []byte, isPartOfBatch bool, state State) Response {
 	var requestMap map[string]interface{}
 	err := json.Unmarshal(jsonRequest, &requestMap)
 	if err != nil {
@@ -107,11 +109,12 @@ func (server *SimpleServer) handleSingle(jsonRequest []byte, isPartOfBatch bool)
 			InvalidRequest, "Method must be a string.")
 	}
 
-	return server.HandleRequest(NewRequestResponder(
+	return server.HandleRequest(NewRequestResponderWithState(
 		requestMap["jsonrpc"].(string),
 		requestMap["id"],
 		requestMap["method"].(string),
 		requestMap["params"],
+		state,
 	))
 }
 
@@ -148,7 +151,7 @@ func appendResponseIfNeeded(responses *[]Response, response Response) {
 // It is also important to note that the order in which the requests are
 // processed (whether single requests or batch) in a are non-deterministic and
 // should be considered to be run all at the same time.
-func (server *SimpleServer) Handle(jsonRequest []byte) []Response {
+func (server *SimpleServer) HandleWithState(jsonRequest []byte, state State) []Response {
 	responses := make([]Response, 0)
 
 	// Check for a batch request.
@@ -179,15 +182,19 @@ func (server *SimpleServer) Handle(jsonRequest []byte) []Response {
 				continue
 			}
 
-			response := server.handleSingle(rawMessage, true)
+			response := server.handleSingle(rawMessage, true, state)
 			appendResponseIfNeeded(&responses, response)
 		}
 	} else {
-		response := server.handleSingle(jsonRequest, false)
+		response := server.handleSingle(jsonRequest, false, state)
 		appendResponseIfNeeded(&responses, response)
 	}
 
 	return responses
+}
+
+func (server *SimpleServer) Handle(jsonRequest []byte) []Response {
+	return server.HandleWithState(jsonRequest, State{})
 }
 
 // Example:
