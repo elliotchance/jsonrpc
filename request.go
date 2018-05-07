@@ -87,9 +87,10 @@ func (request *request) NewServerErrorResponse(err error) Response {
 func (request *request) String() string {
 	b, err := json.Marshal(request)
 	if err != nil {
-		// I don't know what would cause this situation. I really don't
-		// want to panic, so just return a different string instead.
-		return "<Request>"
+		// I don't know what would cause this situation. There is nothing we can
+		// do except return an empty string (which would not occur in any
+		// successful situation).
+		return ""
 	}
 
 	return string(b)

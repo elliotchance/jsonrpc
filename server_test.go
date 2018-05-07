@@ -405,3 +405,8 @@ func TestRequestResponderIsAStringer(t *testing.T) {
 	request := jsonrpc.NewRequestResponder("2.0", 123, "foo", nil)
 	assert.Implements(t, (*fmt.Stringer)(nil), request)
 }
+
+func TestResponseIsAStringer(t *testing.T) {
+	response := jsonrpc.NewSuccessResponse(123, "foo")
+	assert.Implements(t, (*fmt.Stringer)(nil), response)
+}
