@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"testing"
 	"github.com/stretchr/testify/assert"
+	"fmt"
 )
 
 func TestErrorMessageForCode(t *testing.T) {
@@ -398,4 +399,9 @@ func TestStatefulRequestWithKey(t *testing.T) {
 func TestSimpleServerIsAServer(t *testing.T) {
 	server := newTestServer()
 	assert.Implements(t, (*jsonrpc.Server)(nil), server)
+}
+
+func TestRequestResponderIsAStringer(t *testing.T) {
+	request := jsonrpc.NewRequestResponder("2.0", 123, "foo", nil)
+	assert.Implements(t, (*fmt.Stringer)(nil), request)
 }
