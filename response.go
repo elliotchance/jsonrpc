@@ -211,3 +211,10 @@ func (responses Responses) String() string {
 
 	return string(b)
 }
+
+func NewResponsesFromJSON(data []byte) (Responses, error) {
+	response := new(response)
+	err := json.Unmarshal(data, response)
+
+	return Responses{response}, err
+}
