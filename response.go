@@ -71,10 +71,10 @@ type errorResponse struct {
 
 // A JSON-RPC response object.
 type response struct {
-	ResponseVersion string      `json:"jsonrpc"`
-	ResponseId      interface{} `json:"id"`
-	ResponseResult  interface{} `json:"result,omitempty"`
-	ResponseError   interface{} `json:"error,omitempty"`
+	ResponseVersion string         `json:"jsonrpc"`
+	ResponseId      interface{}    `json:"id"`
+	ResponseResult  interface{}    `json:"result,omitempty"`
+	ResponseError   *errorResponse `json:"error,omitempty"`
 }
 
 func (response *response) Version() string {
@@ -94,7 +94,7 @@ func (response *response) ErrorCode() int {
 		return Success
 	}
 
-	return response.ResponseError.(errorResponse).Code
+	return response.ResponseError.Code
 }
 
 func (response *response) ErrorMessage() string {
@@ -102,7 +102,7 @@ func (response *response) ErrorMessage() string {
 		return ""
 	}
 
-	return response.ResponseError.(errorResponse).Message
+	return response.ResponseError.Message
 }
 
 // The string representation of a response will be the JSON encoded value. This
@@ -156,7 +156,7 @@ func NewErrorResponse(id interface{}, code int, message string) Response {
 	return &response{
 		ResponseVersion: "2.0",
 		ResponseId:      id,
-		ResponseError: errorResponse{
+		ResponseError: &errorResponse{
 			Code:    code,
 			Message: message,
 		},
