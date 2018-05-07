@@ -227,5 +227,9 @@ func NewResponsesFromJSON(data []byte) (Responses, error) {
 
 	response := new(response)
 	err := json.Unmarshal(data, response)
+	if err != nil {
+		return nil, err
+	}
+
 	return Responses{response}, err
 }
