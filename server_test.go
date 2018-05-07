@@ -464,3 +464,12 @@ func TestNewResponsesFromJSONWithInvalidJSONArrayReturnsNil(t *testing.T) {
 	responses, _ := jsonrpc.NewResponsesFromJSON(data)
 	assert.Nil(t, responses)
 }
+
+func TestNewResponsesFromJSONWithSingleResponseErrorIsCompatible(t *testing.T) {
+	data := []byte("{\"jsonrpc\":\"2.0\",\"id\":456,\"error\":{\"code\":-32603,\"message\":\"bar\"}}")
+	responses, err := jsonrpc.NewResponsesFromJSON(data)
+	assert.NoError(t, err)
+
+	assert.Equal(t, jsonrpc.InternalError, responses[0].ErrorCode())
+	assert.Equal(t, "bar", responses[0].ErrorMessage())
+}
