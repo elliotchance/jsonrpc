@@ -10,8 +10,8 @@ type RequestHandler func(RequestResponder) Response
 type Server interface {
 	SetHandler(methodName string, handler RequestHandler)
 	HandleRequest(request RequestResponder) Response
-	Handle(jsonRequest []byte) []Response
-	HandleWithState(jsonRequest []byte, state State) []Response
+	Handle(jsonRequest []byte) Responses
+	HandleWithState(jsonRequest []byte, state State) Responses
 	GetHandler(methodName string) RequestHandler
 }
 
@@ -117,7 +117,7 @@ func (server *SimpleServer) handleSingle(jsonRequest []byte, isPartOfBatch bool,
 	))
 }
 
-func appendResponseIfNeeded(responses *[]Response, response Response) {
+func appendResponseIfNeeded(responses *Responses, response Response) {
 	// Notifications do not receive results
 	if response.Id() != nil || response.ErrorCode() != Success {
 		*responses = append(*responses, response)
@@ -150,8 +150,8 @@ func appendResponseIfNeeded(responses *[]Response, response Response) {
 // It is also important to note that the order in which the requests are
 // processed (whether single requests or batch) in a are non-deterministic and
 // should be considered to be run all at the same time.
-func (server *SimpleServer) HandleWithState(jsonRequest []byte, state State) []Response {
-	responses := make([]Response, 0)
+func (server *SimpleServer) HandleWithState(jsonRequest []byte, state State) Responses {
+	responses := make(Responses, 0)
 
 	// Check for a batch request.
 	var batchRequest []interface{}
@@ -161,7 +161,7 @@ func (server *SimpleServer) HandleWithState(jsonRequest []byte, state State) []R
 		// wouldn't care and happily return an empty array of results
 		// back but the JSON-RPC spec says this is an invalid request.
 		if len(batchRequest) == 0 {
-			return []Response{NewErrorResponse(nil, InvalidRequest,
+			return Responses{NewErrorResponse(nil, InvalidRequest,
 				"Batch is empty.")}
 		}
 
@@ -192,7 +192,7 @@ func (server *SimpleServer) HandleWithState(jsonRequest []byte, state State) []R
 	return responses
 }
 
-func (server *SimpleServer) Handle(jsonRequest []byte) []Response {
+func (server *SimpleServer) Handle(jsonRequest []byte) Responses {
 	return server.HandleWithState(jsonRequest, State{})
 }
 

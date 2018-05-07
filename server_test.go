@@ -141,64 +141,64 @@ func TestJSONRPCSpecification(t *testing.T) {
 	// http://www.jsonrpc.org/specification#examples
 	tests := map[string]struct {
 		input           string
-		expectedResults []jsonrpc.Response
+		expectedResults jsonrpc.Responses
 	}{
 		"rpc call with positional parameters 1": {
 			`{"jsonrpc": "2.0", "method": "subtract", "params": [42, 23], "id": 1}`,
 			// `{"jsonrpc": "2.0", "result": 19, "id": 1}`,
-			[]jsonrpc.Response{
+			jsonrpc.Responses{
 				jsonrpc.NewSuccessResponse(float64(1), float64(19)),
 			},
 		},
 		"rpc call with positional parameters 2": {
 			`{"jsonrpc": "2.0", "method": "subtract", "params": [23, 42], "id": 2}`,
 			// `{"jsonrpc": "2.0", "result": -19, "id": 2}`,
-			[]jsonrpc.Response{
+			jsonrpc.Responses{
 				jsonrpc.NewSuccessResponse(float64(2), float64(-19)),
 			},
 		},
 		"rpc call with named parameters 1": {
 			`{"jsonrpc": "2.0", "method": "subtract", "params": {"subtrahend": 23, "minuend": 42}, "id": 3}`,
 			// `{"jsonrpc": "2.0", "result": 19, "id": 3}`,
-			[]jsonrpc.Response{
+			jsonrpc.Responses{
 				jsonrpc.NewSuccessResponse(float64(3), float64(19)),
 			},
 		},
 		"rpc call with named parameters 2": {
 			`{"jsonrpc": "2.0", "method": "subtract", "params": {"minuend": 42, "subtrahend": 23}, "id": 4}`,
 			// `{"jsonrpc": "2.0", "result": 19, "id": 4}`,
-			[]jsonrpc.Response{
+			jsonrpc.Responses{
 				jsonrpc.NewSuccessResponse(float64(4), float64(19)),
 			},
 		},
 		"a notification 1": {
 			`{"jsonrpc": "2.0", "method": "subtract", "params": [1,2,3,4,5]}`,
 			// ``,
-			[]jsonrpc.Response{},
+			jsonrpc.Responses{},
 		},
 		"a notification 2": {
 			`{"jsonrpc": "2.0", "method": "subtract"}`,
 			// ``,
-			[]jsonrpc.Response{},
+			jsonrpc.Responses{},
 		},
 		"rpc call of non-existent method": {
 			`{"jsonrpc": "2.0", "method": "foobar", "id": 1}`,
 			// `{"jsonrpc": "2.0", "error": {"code": -32601, "message": "Method not found"}, "id": "1"}`,
-			[]jsonrpc.Response{
+			jsonrpc.Responses{
 				jsonrpc.NewErrorResponse(float64(1), jsonrpc.MethodNotFound, ""),
 			},
 		},
 		"rpc call with invalid JSON": {
 			`{"jsonrpc": "2.0", "method": "foobar, "params": "bar", "baz]`,
 			// `{"jsonrpc": "2.0", "error": {"code": -32700, "message": "Parse error"}, "id": null}`,
-			[]jsonrpc.Response{
+			jsonrpc.Responses{
 				jsonrpc.NewErrorResponse(nil, jsonrpc.ParseError, ""),
 			},
 		},
 		"rpc call with invalid Request object": {
 			`{"jsonrpc": "2.0", "method": 1, "params": "bar"}`,
 			// `{"jsonrpc": "2.0", "error": {"code": -32600, "message": "Invalid request"}, "id": null}`,
-			[]jsonrpc.Response{
+			jsonrpc.Responses{
 				jsonrpc.NewErrorResponse(nil, jsonrpc.InvalidRequest, "Method must be a string."),
 			},
 		},
@@ -208,21 +208,21 @@ func TestJSONRPCSpecification(t *testing.T) {
 				{"jsonrpc": "2.0", "method"
 			]`,
 			// `{"jsonrpc": "2.0", "error": {"code": -32700, "message": "Parse error"}, "id": null}`,
-			[]jsonrpc.Response{
+			jsonrpc.Responses{
 				jsonrpc.NewErrorResponse(nil, jsonrpc.ParseError, ""),
 			},
 		},
 		"rpc call with an empty Array": {
 			`[]`,
 			// `{"jsonrpc": "2.0", "error": {"code": -32600, "message": "Invalid request"}, "id": null}`,
-			[]jsonrpc.Response{
+			jsonrpc.Responses{
 				jsonrpc.NewErrorResponse(nil, jsonrpc.InvalidRequest, "Batch is empty."),
 			},
 		},
 		"rpc call with an invalid Batch (but not empty)": {
 			`[1]`,
 			// `[{"jsonrpc": "2.0", "error": {"code": -32600, "message": "Invalid request"}, "id": null}]`,
-			[]jsonrpc.Response{
+			jsonrpc.Responses{
 				jsonrpc.NewErrorResponse(nil, jsonrpc.InvalidRequest, ""),
 			},
 		},
@@ -233,7 +233,7 @@ func TestJSONRPCSpecification(t *testing.T) {
 			// 	{"jsonrpc": "2.0", "error": {"code": -32600, "message": "Invalid request"}, "id": null},
 			// 	{"jsonrpc": "2.0", "error": {"code": -32600, "message": "Invalid request"}, "id": null}
 			// ]`,
-			[]jsonrpc.Response{
+			jsonrpc.Responses{
 				jsonrpc.NewErrorResponse(nil, jsonrpc.InvalidRequest, ""),
 				jsonrpc.NewErrorResponse(nil, jsonrpc.InvalidRequest, ""),
 				jsonrpc.NewErrorResponse(nil, jsonrpc.InvalidRequest, ""),
@@ -255,7 +255,7 @@ func TestJSONRPCSpecification(t *testing.T) {
 			// 	{"jsonrpc": "2.0", "error": {"code": -32601, "message": "Method not found"}, "id": 5},
 			// 	{"jsonrpc": "2.0", "result": ["hello", 5], "id": 9}
 			// ]`,
-			[]jsonrpc.Response{
+			jsonrpc.Responses{
 				jsonrpc.NewSuccessResponse(float64(1), float64(7)),
 				jsonrpc.NewSuccessResponse(float64(2), float64(19)),
 				jsonrpc.NewErrorResponse(nil, jsonrpc.InvalidRequest, "Version (jsonrpc) must be a string."),
@@ -269,28 +269,28 @@ func TestJSONRPCSpecification(t *testing.T) {
 				{"jsonrpc": "2.0", "method": "notify_hello", "params": [7]}
 			]`,
 			// ``,
-			[]jsonrpc.Response{},
+			jsonrpc.Responses{},
 		},
 
 		// The tests below are extras for other edge cases not covered above.
 		"wrong version": {
 			`{"jsonrpc": "2", "method": "subtract", "params": [42, 23], "id": 2}`,
 			// `{"jsonrpc": "2.0", "error": {"code": -32600, "message": "Invalid request"}, "id": 2}`,
-			[]jsonrpc.Response{
+			jsonrpc.Responses{
 				jsonrpc.NewErrorResponse(float64(2), jsonrpc.InvalidRequest, "Version is not 2.0."),
 			},
 		},
 		"bad version": {
 			`{"jsonrpc": true, "method": "subtract", "params": [42, 23], "id": 2}`,
 			// `{"jsonrpc": "2.0", "error": {"code": -32600, "message": "Invalid request"}, "id": 2}`,
-			[]jsonrpc.Response{
+			jsonrpc.Responses{
 				jsonrpc.NewErrorResponse(float64(2), jsonrpc.InvalidRequest, "Version (jsonrpc) must be a string."),
 			},
 		},
 		"missing version": {
 			`{"method": "subtract", "params": [42, 23], "id": 2}`,
 			// `{"jsonrpc": "2.0", "error": {"code": -32600, "message": "Invalid request"}, "id": 2}`,
-			[]jsonrpc.Response{
+			jsonrpc.Responses{
 				jsonrpc.NewErrorResponse(float64(2), jsonrpc.InvalidRequest, "Version (jsonrpc) must be a string."),
 			},
 		},
@@ -301,7 +301,7 @@ func TestJSONRPCSpecification(t *testing.T) {
 		"recover from panic": {
 			`{"jsonrpc": "2.0", "method": "panic", "id": 2}`,
 			// `{"jsonrpc": "2.0", "error": {"code": -32000, "message": "Server error"}, "id": 2}`,
-			[]jsonrpc.Response{
+			jsonrpc.Responses{
 				jsonrpc.NewErrorResponse(float64(2), jsonrpc.ServerError, ""),
 			},
 		},
@@ -414,4 +414,9 @@ func TestResponseIsAStringer(t *testing.T) {
 func TestResponseStringIsJSON(t *testing.T) {
 	response := jsonrpc.NewSuccessResponse(123, "foo")
 	assert.Equal(t, "{\"jsonrpc\":\"2.0\",\"id\":123,\"result\":\"foo\"}", response.String())
+}
+
+func TestResponsesIsAStringer(t *testing.T) {
+	responses := jsonrpc.Responses{jsonrpc.NewSuccessResponse(123, "foo")}
+	assert.Implements(t, (*fmt.Stringer)(nil), responses)
 }
