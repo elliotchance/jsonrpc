@@ -452,3 +452,9 @@ func TestNewResponsesFromJSONWithInvalidJSON(t *testing.T) {
 	_, err := jsonrpc.NewResponsesFromJSON(data)
 	assert.EqualError(t, err, "invalid character 'o' in literal false (expecting 'a')")
 }
+
+func TestNewResponsesFromJSONWithInvalidJSONReturnsNil(t *testing.T) {
+	data := []byte("foo")
+	responses, _ := jsonrpc.NewResponsesFromJSON(data)
+	assert.Nil(t, responses)
+}
