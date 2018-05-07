@@ -437,3 +437,12 @@ func TestNewResponsesFromJSONWithSingleResponse(t *testing.T) {
 	assert.Equal(t, "[{\"jsonrpc\":\"2.0\",\"id\":123,\"result\":\"foo\"}]",
 		responses.String())
 }
+
+func TestNewResponsesFromJSONWithMultiResponse(t *testing.T) {
+	data := []byte("[{\"jsonrpc\":\"2.0\",\"id\":123,\"result\":\"foo\"},{\"jsonrpc\":\"2.0\",\"id\":456,\"error\":{\"code\":-32603,\"message\":\"bar\"}}]")
+	responses, err := jsonrpc.NewResponsesFromJSON(data)
+	assert.NoError(t, err)
+
+	assert.Equal(t, "[{\"jsonrpc\":\"2.0\",\"id\":123,\"result\":\"foo\"},{\"jsonrpc\":\"2.0\",\"id\":456,\"error\":{\"code\":-32603,\"message\":\"bar\"}}]",
+		responses.String())
+}

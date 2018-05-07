@@ -213,8 +213,19 @@ func (responses Responses) String() string {
 }
 
 func NewResponsesFromJSON(data []byte) (Responses, error) {
+	if data[0] == '[' {
+		rawResponses := []*response{}
+		err := json.Unmarshal(data, &rawResponses)
+
+		responses := make([]Response, len(rawResponses))
+		for i := range rawResponses {
+			responses[i] = rawResponses[i]
+		}
+
+		return responses, err
+	}
+
 	response := new(response)
 	err := json.Unmarshal(data, response)
-
 	return Responses{response}, err
 }
