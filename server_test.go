@@ -446,3 +446,9 @@ func TestNewResponsesFromJSONWithMultiResponse(t *testing.T) {
 	assert.Equal(t, "[{\"jsonrpc\":\"2.0\",\"id\":123,\"result\":\"foo\"},{\"jsonrpc\":\"2.0\",\"id\":456,\"error\":{\"code\":-32603,\"message\":\"bar\"}}]",
 		responses.String())
 }
+
+func TestNewResponsesFromJSONWithInvalidJSON(t *testing.T) {
+	data := []byte("foo")
+	_, err := jsonrpc.NewResponsesFromJSON(data)
+	assert.EqualError(t, err, "invalid character 'o' in literal false (expecting 'a')")
+}
