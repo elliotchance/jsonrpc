@@ -458,3 +458,9 @@ func TestNewResponsesFromJSONWithInvalidJSONReturnsNil(t *testing.T) {
 	responses, _ := jsonrpc.NewResponsesFromJSON(data)
 	assert.Nil(t, responses)
 }
+
+func TestNewResponsesFromJSONWithInvalidJSONArrayReturnsNil(t *testing.T) {
+	data := []byte("[\"foo\"]")
+	responses, _ := jsonrpc.NewResponsesFromJSON(data)
+	assert.Nil(t, responses)
+}

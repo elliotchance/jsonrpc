@@ -216,6 +216,9 @@ func NewResponsesFromJSON(data []byte) (Responses, error) {
 	if data[0] == '[' {
 		rawResponses := []*response{}
 		err := json.Unmarshal(data, &rawResponses)
+		if err != nil {
+			return nil, err
+		}
 
 		responses := make([]Response, len(rawResponses))
 		for i := range rawResponses {
