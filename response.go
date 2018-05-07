@@ -59,6 +59,8 @@ type Response interface {
 	ErrorMessage() string
 }
 
+type Responses []Response
+
 // A JSON-RPC error is made up of a code and a message. It is acceptable for the
 // message to be empty - the server will replace it with the generic message
 // returned from ErrorMessageForCode().
@@ -108,9 +110,10 @@ func (response *response) ErrorMessage() string {
 func (response *response) String() string {
 	b, err := json.Marshal(response)
 	if err != nil {
-		// I don't know what would cause this situation. I really don't
-		// want to panic, so just return a different string instead.
-		return "<Response>"
+		// I don't know what would cause this situation. There is nothing we can
+		// do except return an empty string (which would not occur in any
+		// successful situation).
+		return ""
 	}
 
 	return string(b)
@@ -196,4 +199,15 @@ func ErrorMessageForCode(code int) string {
 	}
 
 	return "Unknown error"
+}
+
+func (responses Responses) String() string {
+	b, err := json.Marshal(responses)
+	if err != nil {
+		// I don't know what would cause this situation. I really don't
+		// want to panic, so just return a different string instead.
+		return ""
+	}
+
+	return string(b)
 }
