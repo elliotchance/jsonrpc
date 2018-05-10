@@ -51,12 +51,15 @@ const (
 //     }
 //
 type Response interface {
-	fmt.Stringer
 	Version() string
 	Id() interface{}
 	Result() interface{}
 	ErrorCode() int
 	ErrorMessage() string
+
+	// Serialization
+	fmt.Stringer
+	Bytes() []byte
 }
 
 type Responses []Response
@@ -108,15 +111,19 @@ func (response *response) ErrorMessage() string {
 // The string representation of a response will be the JSON encoded value. This
 // JSON is expected to be a perfectly valid JSON-RPC response.
 func (response *response) String() string {
+	return string(response.Bytes())
+}
+
+func (response *response) Bytes() []byte {
 	b, err := json.Marshal(response)
 	if err != nil {
 		// I don't know what would cause this situation. There is nothing we can
 		// do except return an empty string (which would not occur in any
 		// successful situation).
-		return ""
+		return nil
 	}
 
-	return string(b)
+	return b
 }
 
 // Create a response containing a successful response.
