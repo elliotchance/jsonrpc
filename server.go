@@ -81,40 +81,14 @@ func (server *SimpleServer) HandleRequest(request RequestResponder) (response Re
 }
 
 func (server *SimpleServer) handleSingle(jsonRequest []byte, isPartOfBatch bool, state State) Response {
-	var requestMap map[string]interface{}
-	err := json.Unmarshal(jsonRequest, &requestMap)
-	if err != nil {
-		errCode := ParseError
+	request, id, errCode, errMessage :=
+		newRequestResponderFromJSON(jsonRequest, isPartOfBatch, state)
 
-		// The JSON-RPC spec says that for a batch request, any
-		// individual requests that would normally throw a ParseError
-		// here should be treated as InvalidRequest instead.
-		if isPartOfBatch {
-			errCode = InvalidRequest
-		}
-
-		// It is unlikely that we will have an "id" but we might as well
-		// try.
-		return NewErrorResponse(requestMap["id"], errCode, "")
+	if errCode != Success {
+		return NewErrorResponse(id, errCode, errMessage)
 	}
 
-	// Catch some type errors before creating the real request.
-	if _, ok := requestMap["jsonrpc"].(string); !ok {
-		return NewErrorResponse(requestMap["id"],
-			InvalidRequest, "Version (jsonrpc) must be a string.")
-	}
-	if _, ok := requestMap["method"].(string); !ok {
-		return NewErrorResponse(requestMap["id"],
-			InvalidRequest, "Method must be a string.")
-	}
-
-	return server.HandleRequest(NewRequestResponderWithState(
-		requestMap["jsonrpc"].(string),
-		requestMap["id"],
-		requestMap["method"].(string),
-		requestMap["params"],
-		state,
-	))
+	return server.HandleRequest(request)
 }
 
 func appendResponseIfNeeded(responses *Responses, response Response) {
