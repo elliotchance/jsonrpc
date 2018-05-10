@@ -173,7 +173,7 @@ func newRequestResponderFromJSON(jsonRequest []byte, isPartOfBatch bool, state S
 	), requestMap["id"], Success, ""
 }
 
-func NewRequestFromJSON(data []byte) (Request, error) {
+func NewRequestFromJSON(data []byte) (RequestResponder, error) {
 	if len(data) == 0 {
 		return nil, errors.New("Empty input")
 	}
@@ -186,7 +186,7 @@ func NewRequestFromJSON(data []byte) (Request, error) {
 	return r, nil
 }
 
-func NewRequestsFromJSON(data []byte) ([]Request, error) {
+func NewRequestsFromJSON(data []byte) ([]RequestResponder, error) {
 	if len(data) == 0 {
 		return nil, errors.New("Empty input")
 	}
@@ -198,7 +198,7 @@ func NewRequestsFromJSON(data []byte) ([]Request, error) {
 			return nil, err
 		}
 
-		return []Request{request}, err
+		return []RequestResponder{request}, err
 	}
 
 	// Multi request.
@@ -208,7 +208,7 @@ func NewRequestsFromJSON(data []byte) ([]Request, error) {
 		return nil, err
 	}
 
-	requests := make([]Request, len(rawRequests))
+	requests := make([]RequestResponder, len(rawRequests))
 	for i := range rawRequests {
 		requests[i] = rawRequests[i]
 	}
