@@ -11,12 +11,15 @@ import (
 
 // Provides immutable information about a request.
 type Request interface {
-	fmt.Stringer
 	Version() string
 	Method() string
 	Params() interface{}
 	Id() interface{}
 	State(key string) interface{}
+
+	// Serialization
+	fmt.Stringer
+	Bytes() []byte
 }
 
 // State can be optionally provided with Handle requests to pass extra state to
@@ -85,15 +88,7 @@ func (request *request) NewServerErrorResponse(err error) Response {
 // The string representation of a request will be the JSON encoded value. This
 // JSON is expected to be a perfectly valid JSON-RPC request.
 func (request *request) String() string {
-	b, err := json.Marshal(request)
-	if err != nil {
-		// I don't know what would cause this situation. There is nothing we can
-		// do except return an empty string (which would not occur in any
-		// successful situation).
-		return ""
-	}
-
-	return string(b)
+	return string(request.Bytes())
 }
 
 // Create a JSON-RPC request that is also able to produce responses.
@@ -126,4 +121,18 @@ func NewRequestResponder(version string, id interface{}, method string, params i
 func GenerateRequestId() string {
 	hash := md5.Sum([]byte(strconv.Itoa(rand.Int())))
 	return hex.EncodeToString(hash[:])
+}
+
+// The bytes representation of a request will be the JSON encoded value. This
+// JSON is expected to be a perfectly valid JSON-RPC request.
+func (request *request) Bytes() []byte {
+	b, err := json.Marshal(request)
+	if err != nil {
+		// I don't know what would cause this situation. There is nothing we can
+		// do except return an empty string (which would not occur in any
+		// successful situation).
+		return nil
+	}
+
+	return b
 }
