@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math/rand"
 	"strconv"
+	"github.com/pkg/errors"
 )
 
 // Provides immutable information about a request.
@@ -135,4 +136,48 @@ func (request *request) Bytes() []byte {
 	}
 
 	return b
+}
+
+func newRequestResponderFromJSON(jsonRequest []byte, isPartOfBatch bool, state State) (RequestResponder, interface{}, int, string) {
+	var requestMap map[string]interface{}
+	err := json.Unmarshal(jsonRequest, &requestMap)
+	if err != nil {
+		errCode := ParseError
+
+		// The JSON-RPC spec says that for a batch request, any individual
+		// requests that would normally throw a ParseError here should be
+		// treated as InvalidRequest instead.
+		if isPartOfBatch {
+			errCode = InvalidRequest
+		}
+
+		// It is unlikely that we will have an "id" but we might as well try.
+		return nil, requestMap["id"], errCode, ErrorMessageForCode(errCode)
+	}
+
+	// Catch some type errors before creating the real request.
+	if _, ok := requestMap["jsonrpc"].(string); !ok {
+		return nil, requestMap["id"],
+			InvalidRequest, "Version (jsonrpc) must be a string."
+	}
+	if _, ok := requestMap["method"].(string); !ok {
+		return nil, requestMap["id"], InvalidRequest, "Method must be a string."
+	}
+
+	return NewRequestResponderWithState(
+		requestMap["jsonrpc"].(string),
+		requestMap["id"],
+		requestMap["method"].(string),
+		requestMap["params"],
+		state,
+	), requestMap["id"], Success, ""
+}
+
+func NewRequestFromJSON(data []byte) (Request, error) {
+	r, _, _, errMessage := newRequestResponderFromJSON(data, false, nil)
+	if errMessage != "" {
+		return nil, errors.New(errMessage)
+	}
+
+	return r, nil
 }
