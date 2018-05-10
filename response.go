@@ -209,14 +209,18 @@ func ErrorMessageForCode(code int) string {
 }
 
 func (responses Responses) String() string {
+	return string(responses.Bytes())
+}
+
+func (responses Responses) Bytes() []byte {
 	b, err := json.Marshal(responses)
 	if err != nil {
 		// I don't know what would cause this situation. I really don't
 		// want to panic, so just return a different string instead.
-		return ""
+		return nil
 	}
 
-	return string(b)
+	return b
 }
 
 func NewResponsesFromJSON(data []byte) (Responses, error) {
