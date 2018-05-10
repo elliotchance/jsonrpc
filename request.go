@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"math/rand"
 	"strconv"
-	"github.com/pkg/errors"
+	"errors"
 )
 
 // Provides immutable information about a request.
@@ -174,10 +174,44 @@ func newRequestResponderFromJSON(jsonRequest []byte, isPartOfBatch bool, state S
 }
 
 func NewRequestFromJSON(data []byte) (Request, error) {
+	if len(data) == 0 {
+		return nil, errors.New("Empty input")
+	}
+
 	r, _, _, errMessage := newRequestResponderFromJSON(data, false, nil)
 	if errMessage != "" {
 		return nil, errors.New(errMessage)
 	}
 
 	return r, nil
+}
+
+func NewRequestsFromJSON(data []byte) ([]Request, error) {
+	if len(data) == 0 {
+		return nil, errors.New("Empty input")
+	}
+
+	// Single request
+	if data[0] != '[' {
+		request, err := NewRequestFromJSON(data)
+		if err != nil {
+			return nil, err
+		}
+
+		return []Request{request}, err
+	}
+
+	// Multi request.
+	rawRequests := []*request{}
+	err := json.Unmarshal(data, &rawRequests)
+	if err != nil {
+		return nil, err
+	}
+
+	requests := make([]Request, len(rawRequests))
+	for i := range rawRequests {
+		requests[i] = rawRequests[i]
+	}
+
+	return requests, err
 }
