@@ -17,6 +17,10 @@ type Server interface {
 
 type SimpleServer struct {
 	requestHandlers map[string]RequestHandler
+
+	// See StatReporter
+	totalPayloads int
+	totalRequests int
 }
 
 // SetHandler will register (or replace) a handler for a method.
@@ -59,6 +63,8 @@ func (server *SimpleServer) GetHandler(methodName string) RequestHandler {
 // Handle() returns an array of Response interfaces to allow batch processing.
 // The "Batch Requests" second explains this in more detail.
 func (server *SimpleServer) HandleRequest(request RequestResponder) (response Response) {
+	server.totalPayloads += 1
+
 	// Always recover from a panic and send it back as an error.
 	defer func(id interface{}) {
 		if r := recover(); r != nil {
@@ -87,6 +93,11 @@ func (server *SimpleServer) handleSingle(jsonRequest []byte, isPartOfBatch bool,
 	if errCode != Success {
 		return NewErrorResponse(id, errCode, errMessage)
 	}
+
+	// HandleRequest will increment the totalPayloads because it is part of the
+	// public API. However, here we are calling it from a private API so correct
+	// its value.
+	server.totalPayloads -= 1
 
 	return server.HandleRequest(request)
 }
@@ -125,6 +136,8 @@ func appendResponseIfNeeded(responses *Responses, response Response) {
 // processed (whether single requests or batch) in a are non-deterministic and
 // should be considered to be run all at the same time.
 func (server *SimpleServer) HandleWithState(jsonRequest []byte, state State) Responses {
+	server.totalPayloads += 1
+
 	responses := make(Responses, 0)
 
 	// Check for a batch request.

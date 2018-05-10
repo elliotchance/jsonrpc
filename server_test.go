@@ -136,111 +136,124 @@ func TestSimpleServer_SetHandler(t *testing.T) {
 	})
 }
 
-func TestJSONRPCSpecification(t *testing.T) {
-	// All of these examples were provided from the official spec at:
-	// http://www.jsonrpc.org/specification#examples
-	tests := map[string]struct {
-		input           string
-		expectedResults jsonrpc.Responses
-	}{
-		"rpc call with positional parameters 1": {
-			`{"jsonrpc": "2.0", "method": "subtract", "params": [42, 23], "id": 1}`,
-			// `{"jsonrpc": "2.0", "result": 19, "id": 1}`,
-			jsonrpc.Responses{
-				jsonrpc.NewSuccessResponse(float64(1), float64(19)),
-			},
+// All of these examples were provided from the official spec at:
+// http://www.jsonrpc.org/specification#examples
+var specTests = map[string]struct {
+	j             string            // input
+	r             jsonrpc.Responses // expectedResponses
+	statsPayloads int
+}{
+	"rpc call with positional parameters 1": {
+		j: `{"jsonrpc": "2.0", "method": "subtract", "params": [42, 23], "id": 1}`,
+		// `{"jsonrpc": "2.0", "result": 19, "id": 1}`,
+		r: jsonrpc.Responses{
+			jsonrpc.NewSuccessResponse(float64(1), float64(19)),
 		},
-		"rpc call with positional parameters 2": {
-			`{"jsonrpc": "2.0", "method": "subtract", "params": [23, 42], "id": 2}`,
-			// `{"jsonrpc": "2.0", "result": -19, "id": 2}`,
-			jsonrpc.Responses{
-				jsonrpc.NewSuccessResponse(float64(2), float64(-19)),
-			},
+		statsPayloads: 1,
+	},
+	"rpc call with positional parameters 2": {
+		j: `{"jsonrpc": "2.0", "method": "subtract", "params": [23, 42], "id": 2}`,
+		// `{"jsonrpc": "2.0", "result": -19, "id": 2}`,
+		r: jsonrpc.Responses{
+			jsonrpc.NewSuccessResponse(float64(2), float64(-19)),
 		},
-		"rpc call with named parameters 1": {
-			`{"jsonrpc": "2.0", "method": "subtract", "params": {"subtrahend": 23, "minuend": 42}, "id": 3}`,
-			// `{"jsonrpc": "2.0", "result": 19, "id": 3}`,
-			jsonrpc.Responses{
-				jsonrpc.NewSuccessResponse(float64(3), float64(19)),
-			},
+		statsPayloads: 1,
+	},
+	"rpc call with named parameters 1": {
+		j: `{"jsonrpc": "2.0", "method": "subtract", "params": {"subtrahend": 23, "minuend": 42}, "id": 3}`,
+		// `{"jsonrpc": "2.0", "result": 19, "id": 3}`,
+		r: jsonrpc.Responses{
+			jsonrpc.NewSuccessResponse(float64(3), float64(19)),
 		},
-		"rpc call with named parameters 2": {
-			`{"jsonrpc": "2.0", "method": "subtract", "params": {"minuend": 42, "subtrahend": 23}, "id": 4}`,
-			// `{"jsonrpc": "2.0", "result": 19, "id": 4}`,
-			jsonrpc.Responses{
-				jsonrpc.NewSuccessResponse(float64(4), float64(19)),
-			},
+		statsPayloads: 1,
+	},
+	"rpc call with named parameters 2": {
+		j: `{"jsonrpc": "2.0", "method": "subtract", "params": {"minuend": 42, "subtrahend": 23}, "id": 4}`,
+		// `{"jsonrpc": "2.0", "result": 19, "id": 4}`,
+		r: jsonrpc.Responses{
+			jsonrpc.NewSuccessResponse(float64(4), float64(19)),
 		},
-		"a notification 1": {
-			`{"jsonrpc": "2.0", "method": "subtract", "params": [1,2,3,4,5]}`,
-			// ``,
-			jsonrpc.Responses{},
+		statsPayloads: 1,
+	},
+	"a notification 1": {
+		j: `{"jsonrpc": "2.0", "method": "subtract", "params": [1,2,3,4,5]}`,
+		// ``,
+		r: jsonrpc.Responses{},
+		statsPayloads: 1,
+	},
+	"a notification 2": {
+		j: `{"jsonrpc": "2.0", "method": "subtract"}`,
+		// ``,
+		r: jsonrpc.Responses{},
+		statsPayloads: 1,
+	},
+	"rpc call of non-existent method": {
+		j: `{"jsonrpc": "2.0", "method": "foobar", "id": 1}`,
+		// `{"jsonrpc": "2.0", "error": {"code": -32601, "message": "Method not found"}, "id": "1"}`,
+		r: jsonrpc.Responses{
+			jsonrpc.NewErrorResponse(float64(1), jsonrpc.MethodNotFound, ""),
 		},
-		"a notification 2": {
-			`{"jsonrpc": "2.0", "method": "subtract"}`,
-			// ``,
-			jsonrpc.Responses{},
+		statsPayloads: 1,
+	},
+	"rpc call with invalid JSON": {
+		j: `{"jsonrpc": "2.0", "method": "foobar, "params": "bar", "baz]`,
+		// `{"jsonrpc": "2.0", "error": {"code": -32700, "message": "Parse error"}, "id": null}`,
+		r: jsonrpc.Responses{
+			jsonrpc.NewErrorResponse(nil, jsonrpc.ParseError, ""),
 		},
-		"rpc call of non-existent method": {
-			`{"jsonrpc": "2.0", "method": "foobar", "id": 1}`,
-			// `{"jsonrpc": "2.0", "error": {"code": -32601, "message": "Method not found"}, "id": "1"}`,
-			jsonrpc.Responses{
-				jsonrpc.NewErrorResponse(float64(1), jsonrpc.MethodNotFound, ""),
-			},
+		statsPayloads: 1,
+	},
+	"rpc call with invalid Request object": {
+		j: `{"jsonrpc": "2.0", "method": 1, "params": "bar"}`,
+		// `{"jsonrpc": "2.0", "error": {"code": -32600, "message": "Invalid request"}, "id": null}`,
+		r: jsonrpc.Responses{
+			jsonrpc.NewErrorResponse(nil, jsonrpc.InvalidRequest, "Method must be a string."),
 		},
-		"rpc call with invalid JSON": {
-			`{"jsonrpc": "2.0", "method": "foobar, "params": "bar", "baz]`,
-			// `{"jsonrpc": "2.0", "error": {"code": -32700, "message": "Parse error"}, "id": null}`,
-			jsonrpc.Responses{
-				jsonrpc.NewErrorResponse(nil, jsonrpc.ParseError, ""),
-			},
-		},
-		"rpc call with invalid Request object": {
-			`{"jsonrpc": "2.0", "method": 1, "params": "bar"}`,
-			// `{"jsonrpc": "2.0", "error": {"code": -32600, "message": "Invalid request"}, "id": null}`,
-			jsonrpc.Responses{
-				jsonrpc.NewErrorResponse(nil, jsonrpc.InvalidRequest, "Method must be a string."),
-			},
-		},
-		"rpc call Batch, invalid JSON": {
-			`[
+		statsPayloads: 1,
+	},
+	"rpc call Batch, invalid JSON": {
+		j: `[
 				{"jsonrpc": "2.0", "method": "sum", "params": [1,2,4], "id": "1"},
 				{"jsonrpc": "2.0", "method"
 			]`,
-			// `{"jsonrpc": "2.0", "error": {"code": -32700, "message": "Parse error"}, "id": null}`,
-			jsonrpc.Responses{
-				jsonrpc.NewErrorResponse(nil, jsonrpc.ParseError, ""),
-			},
+		// `{"jsonrpc": "2.0", "error": {"code": -32700, "message": "Parse error"}, "id": null}`,
+		r: jsonrpc.Responses{
+			jsonrpc.NewErrorResponse(nil, jsonrpc.ParseError, ""),
 		},
-		"rpc call with an empty Array": {
-			`[]`,
-			// `{"jsonrpc": "2.0", "error": {"code": -32600, "message": "Invalid request"}, "id": null}`,
-			jsonrpc.Responses{
-				jsonrpc.NewErrorResponse(nil, jsonrpc.InvalidRequest, "Batch is empty."),
-			},
+		statsPayloads: 1,
+	},
+	"rpc call with an empty Array": {
+		j: `[]`,
+		// `{"jsonrpc": "2.0", "error": {"code": -32600, "message": "Invalid request"}, "id": null}`,
+		r: jsonrpc.Responses{
+			jsonrpc.NewErrorResponse(nil, jsonrpc.InvalidRequest, "Batch is empty."),
 		},
-		"rpc call with an invalid Batch (but not empty)": {
-			`[1]`,
-			// `[{"jsonrpc": "2.0", "error": {"code": -32600, "message": "Invalid request"}, "id": null}]`,
-			jsonrpc.Responses{
-				jsonrpc.NewErrorResponse(nil, jsonrpc.InvalidRequest, ""),
-			},
+		statsPayloads: 1,
+	},
+	"rpc call with an invalid Batch (but not empty)": {
+		j: `[1]`,
+		// `[{"jsonrpc": "2.0", "error": {"code": -32600, "message": "Invalid request"}, "id": null}]`,
+		r: jsonrpc.Responses{
+			jsonrpc.NewErrorResponse(nil, jsonrpc.InvalidRequest, ""),
 		},
-		"rpc call with invalid Batch": {
-			`[1,2,3]`,
-			// `[
-			// 	{"jsonrpc": "2.0", "error": {"code": -32600, "message": "Invalid request"}, "id": null},
-			// 	{"jsonrpc": "2.0", "error": {"code": -32600, "message": "Invalid request"}, "id": null},
-			// 	{"jsonrpc": "2.0", "error": {"code": -32600, "message": "Invalid request"}, "id": null}
-			// ]`,
-			jsonrpc.Responses{
-				jsonrpc.NewErrorResponse(nil, jsonrpc.InvalidRequest, ""),
-				jsonrpc.NewErrorResponse(nil, jsonrpc.InvalidRequest, ""),
-				jsonrpc.NewErrorResponse(nil, jsonrpc.InvalidRequest, ""),
-			},
+		statsPayloads: 1,
+	},
+	"rpc call with invalid Batch": {
+		j: `[1,2,3]`,
+		// `[
+		// 	{"jsonrpc": "2.0", "error": {"code": -32600, "message": "Invalid request"}, "id": null},
+		// 	{"jsonrpc": "2.0", "error": {"code": -32600, "message": "Invalid request"}, "id": null},
+		// 	{"jsonrpc": "2.0", "error": {"code": -32600, "message": "Invalid request"}, "id": null}
+		// ]`,
+		r: jsonrpc.Responses{
+			jsonrpc.NewErrorResponse(nil, jsonrpc.InvalidRequest, ""),
+			jsonrpc.NewErrorResponse(nil, jsonrpc.InvalidRequest, ""),
+			jsonrpc.NewErrorResponse(nil, jsonrpc.InvalidRequest, ""),
 		},
-		"rpc call Batch": {
-			`[
+		statsPayloads: 1,
+	},
+	"rpc call Batch": {
+		j: `[
 				{"jsonrpc": "2.0", "method": "sum", "params": [1,2,4], "id": 1},
 				{"jsonrpc": "2.0", "method": "notify_hello", "params": [7]},
 				{"jsonrpc": "2.0", "method": "subtract", "params": [42,23], "id": 2},
@@ -248,72 +261,79 @@ func TestJSONRPCSpecification(t *testing.T) {
 				{"jsonrpc": "2.0", "method": "foo.get", "params": {"name": "myself"}, "id": 5},
 				{"jsonrpc": "2.0", "method": "get_data", "id": 9}
 			]`,
-			// `[
-			// 	{"jsonrpc": "2.0", "result": 7, "id": 1},
-			// 	{"jsonrpc": "2.0", "result": 19, "id": 2},
-			// 	{"jsonrpc": "2.0", "error": {"code": -32600, "message": "Invalid request"}, "id": null},
-			// 	{"jsonrpc": "2.0", "error": {"code": -32601, "message": "Method not found"}, "id": 5},
-			// 	{"jsonrpc": "2.0", "result": ["hello", 5], "id": 9}
-			// ]`,
-			jsonrpc.Responses{
-				jsonrpc.NewSuccessResponse(float64(1), float64(7)),
-				jsonrpc.NewSuccessResponse(float64(2), float64(19)),
-				jsonrpc.NewErrorResponse(nil, jsonrpc.InvalidRequest, "Version (jsonrpc) must be a string."),
-				jsonrpc.NewErrorResponse(float64(5), jsonrpc.MethodNotFound, ""),
-				jsonrpc.NewSuccessResponse(float64(9), []interface{}{"hello", float64(5)}),
-			},
+		// `[
+		// 	{"jsonrpc": "2.0", "result": 7, "id": 1},
+		// 	{"jsonrpc": "2.0", "result": 19, "id": 2},
+		// 	{"jsonrpc": "2.0", "error": {"code": -32600, "message": "Invalid request"}, "id": null},
+		// 	{"jsonrpc": "2.0", "error": {"code": -32601, "message": "Method not found"}, "id": 5},
+		// 	{"jsonrpc": "2.0", "result": ["hello", 5], "id": 9}
+		// ]`,
+		r: jsonrpc.Responses{
+			jsonrpc.NewSuccessResponse(float64(1), float64(7)),
+			jsonrpc.NewSuccessResponse(float64(2), float64(19)),
+			jsonrpc.NewErrorResponse(nil, jsonrpc.InvalidRequest, "Version (jsonrpc) must be a string."),
+			jsonrpc.NewErrorResponse(float64(5), jsonrpc.MethodNotFound, ""),
+			jsonrpc.NewSuccessResponse(float64(9), []interface{}{"hello", float64(5)}),
 		},
-		"rpc call Batch (all notifications)": {
-			`[
+		statsPayloads: 1,
+	},
+	"rpc call Batch (all notifications)": {
+		j: `[
 				{"jsonrpc": "2.0", "method": "sum", "params": [1,2,4]},
 				{"jsonrpc": "2.0", "method": "notify_hello", "params": [7]}
 			]`,
-			// ``,
-			jsonrpc.Responses{},
-		},
+		// ``,
+		r: jsonrpc.Responses{},
+		statsPayloads: 1,
+	},
 
-		// The tests below are extras for other edge cases not covered above.
-		"wrong version": {
-			`{"jsonrpc": "2", "method": "subtract", "params": [42, 23], "id": 2}`,
-			// `{"jsonrpc": "2.0", "error": {"code": -32600, "message": "Invalid request"}, "id": 2}`,
-			jsonrpc.Responses{
-				jsonrpc.NewErrorResponse(float64(2), jsonrpc.InvalidRequest, "Version is not 2.0."),
-			},
+	// The tests below are extras for other edge cases not covered above.
+	"wrong version": {
+		j: `{"jsonrpc": "2", "method": "subtract", "params": [42, 23], "id": 2}`,
+		// `{"jsonrpc": "2.0", "error": {"code": -32600, "message": "Invalid request"}, "id": 2}`,
+		r: jsonrpc.Responses{
+			jsonrpc.NewErrorResponse(float64(2), jsonrpc.InvalidRequest, "Version is not 2.0."),
 		},
-		"bad version": {
-			`{"jsonrpc": true, "method": "subtract", "params": [42, 23], "id": 2}`,
-			// `{"jsonrpc": "2.0", "error": {"code": -32600, "message": "Invalid request"}, "id": 2}`,
-			jsonrpc.Responses{
-				jsonrpc.NewErrorResponse(float64(2), jsonrpc.InvalidRequest, "Version (jsonrpc) must be a string."),
-			},
+		statsPayloads: 1,
+	},
+	"bad version": {
+		j: `{"jsonrpc": true, "method": "subtract", "params": [42, 23], "id": 2}`,
+		// `{"jsonrpc": "2.0", "error": {"code": -32600, "message": "Invalid request"}, "id": 2}`,
+		r: jsonrpc.Responses{
+			jsonrpc.NewErrorResponse(float64(2), jsonrpc.InvalidRequest, "Version (jsonrpc) must be a string."),
 		},
-		"missing version": {
-			`{"method": "subtract", "params": [42, 23], "id": 2}`,
-			// `{"jsonrpc": "2.0", "error": {"code": -32600, "message": "Invalid request"}, "id": 2}`,
-			jsonrpc.Responses{
-				jsonrpc.NewErrorResponse(float64(2), jsonrpc.InvalidRequest, "Version (jsonrpc) must be a string."),
-			},
+		statsPayloads: 1,
+	},
+	"missing version": {
+		j: `{"method": "subtract", "params": [42, 23], "id": 2}`,
+		// `{"jsonrpc": "2.0", "error": {"code": -32600, "message": "Invalid request"}, "id": 2}`,
+		r: jsonrpc.Responses{
+			jsonrpc.NewErrorResponse(float64(2), jsonrpc.InvalidRequest, "Version (jsonrpc) must be a string."),
 		},
+		statsPayloads: 1,
+	},
 
-		// The server much always recover from a panic(). We do not
-		// return the error because it ay contain sensitive information.
-		// Instead a generic Internal error will do.
-		"recover from panic": {
-			`{"jsonrpc": "2.0", "method": "panic", "id": 2}`,
-			// `{"jsonrpc": "2.0", "error": {"code": -32000, "message": "Server error"}, "id": 2}`,
-			jsonrpc.Responses{
-				jsonrpc.NewErrorResponse(float64(2), jsonrpc.ServerError, ""),
-			},
+	// The server much always recover from a panic(). We do not
+	// return the error because it ay contain sensitive information.
+	// Instead a generic Internal error will do.
+	"recover from panic": {
+		j: `{"jsonrpc": "2.0", "method": "panic", "id": 2}`,
+		// `{"jsonrpc": "2.0", "error": {"code": -32000, "message": "Server error"}, "id": 2}`,
+		r: jsonrpc.Responses{
+			jsonrpc.NewErrorResponse(float64(2), jsonrpc.ServerError, ""),
 		},
-	}
+		statsPayloads: 1,
+	},
+}
 
-	for testName, test := range tests {
+func TestJSONRPCSpecification(t *testing.T) {
+	for testName, test := range specTests {
 		t.Run(testName, func(t *testing.T) {
 			server := newTestServer()
-			responses := server.Handle([]byte(test.input))
+			responses := server.Handle([]byte(test.j))
 
-			if !reflect.DeepEqual(responses, test.expectedResults) {
-				t.Errorf("TestJSONRPCSpecification: %v != %v", responses, test.expectedResults)
+			if !reflect.DeepEqual(responses, test.r) {
+				t.Errorf("TestJSONRPCSpecification: %v != %v", responses, test.r)
 			}
 		})
 	}
