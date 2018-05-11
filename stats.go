@@ -22,6 +22,20 @@ type StatReporter interface {
 	// back. A notification does not send back a result so it will not increment
 	// this counter.
 	TotalSuccessResponses() int
+
+	// TotalErrorResponses returns the number of individual unsuccessful
+	// responses sent back. A notification does not send back a result so it
+	// will not increment this counter.
+	//
+	// This will also include requests that fail to even make it to the handler
+	// and have to send back and error like a Parse error or invalid JSON-RPC
+	// version.
+	//
+	// A batch request may contain zero or more failures if the JSON is not
+	// malformed. However, a batch containing many jobs that is malformed JSON
+	// (so the individual request cannot be parsed) will result in a single
+	// Parse error sent back which will only count as one error response.
+	TotalErrorResponses() int
 }
 
 func (server *SimpleServer) TotalPayloads() int {
@@ -34,4 +48,8 @@ func (server *SimpleServer) TotalRequests() int {
 
 func (server *SimpleServer) TotalSuccessResponses() int {
 	return server.totalSuccessResponses
+}
+
+func (server *SimpleServer) TotalErrorResponses() int {
+	return server.totalErrorResponses
 }

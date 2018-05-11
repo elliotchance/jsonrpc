@@ -22,6 +22,7 @@ type SimpleServer struct {
 	totalPayloads         int
 	totalRequests         int
 	totalSuccessResponses int
+	totalErrorResponses   int
 }
 
 // SetHandler will register (or replace) a handler for a method.
@@ -64,12 +65,6 @@ func (server *SimpleServer) GetHandler(methodName string) RequestHandler {
 // Handle() returns an array of Response interfaces to allow batch processing.
 // The "Batch Requests" second explains this in more detail.
 func (server *SimpleServer) HandleRequest(request RequestResponder) (response Response) {
-	defer func() {
-		if response.ErrorCode() == Success && request.Id() != nil {
-			server.totalSuccessResponses += 1
-		}
-	}()
-
 	server.totalPayloads += 1
 
 	// Always recover from a panic and send it back as an error.
@@ -77,12 +72,21 @@ func (server *SimpleServer) HandleRequest(request RequestResponder) (response Re
 		if r := recover(); r != nil {
 			response = request.NewErrorResponse(ServerError, "")
 		}
+
+		// Track responses, but ignore notifications.
+		if id != nil {
+			switch response.ErrorCode() {
+			case Success:
+				server.totalSuccessResponses += 1
+			default:
+				server.totalErrorResponses += 1
+			}
+		}
 	}(request.Id())
 
 	// We only support 2.0 right now.
 	if request.Version() != "2.0" {
-		return request.NewErrorResponse(InvalidRequest,
-			"Version is not 2.0.")
+		return request.NewErrorResponse(InvalidRequest, "Version is not 2.0.")
 	}
 
 	handler := server.requestHandlers[request.Method()]
@@ -99,6 +103,8 @@ func (server *SimpleServer) handleSingle(jsonRequest []byte, isPartOfBatch bool,
 		newRequestResponderFromJSON(jsonRequest, isPartOfBatch, state)
 
 	if errCode != Success {
+		server.totalErrorResponses += 1
+
 		return NewErrorResponse(id, errCode, errMessage)
 	}
 
@@ -156,6 +162,8 @@ func (server *SimpleServer) HandleWithState(jsonRequest []byte, state State) Res
 		// care and happily return an empty array of results back but the
 		// JSON-RPC spec says this is an invalid request.
 		if len(batchRequest) == 0 {
+			server.totalErrorResponses += 1
+
 			return Responses{NewErrorResponse(nil, InvalidRequest,
 				"Batch is empty.")}
 		}
@@ -170,8 +178,7 @@ func (server *SimpleServer) HandleWithState(jsonRequest []byte, state State) Res
 				// This condition should not be possible since we have already
 				// unmarshalled this object once. Still, better to be safe than
 				// sorry.
-				response := NewErrorResponse(nil, ParseError,
-					err.Error())
+				response := NewErrorResponse(nil, ParseError, err.Error())
 				appendResponseIfNeeded(&responses, response)
 				continue
 			}
