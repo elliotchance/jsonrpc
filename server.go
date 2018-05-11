@@ -19,10 +19,11 @@ type SimpleServer struct {
 	requestHandlers map[string]RequestHandler
 
 	// See StatReporter
-	totalPayloads         int
-	totalRequests         int
-	totalSuccessResponses int
-	totalErrorResponses   int
+	totalPayloads             int
+	totalRequests             int
+	totalSuccessResponses     int
+	totalErrorResponses       int
+	totalSuccessNotifications int
 }
 
 // SetHandler will register (or replace) a handler for a method.
@@ -73,14 +74,14 @@ func (server *SimpleServer) HandleRequest(request RequestResponder) (response Re
 			response = request.NewErrorResponse(ServerError, "")
 		}
 
-		// Track responses, but ignore notifications.
-		if id != nil {
-			switch response.ErrorCode() {
-			case Success:
-				server.totalSuccessResponses += 1
-			default:
-				server.totalErrorResponses += 1
-			}
+		// Track responses.
+		switch {
+		case id == nil:
+			server.totalSuccessNotifications += 1
+		case response.ErrorCode() == Success:
+			server.totalSuccessResponses += 1
+		default:
+			server.totalErrorResponses += 1
 		}
 	}(request.Id())
 
