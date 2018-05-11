@@ -93,3 +93,47 @@ func TestSimpleServer_TotalRequests(t *testing.T) {
 		}
 	})
 }
+
+func TestSimpleServer_TotalSuccessResponses(t *testing.T) {
+	server := newTestServer()
+	previousValue := 0
+	assert.Equal(t, previousValue, server.TotalSuccessResponses())
+
+	t.Run("Handle", func(t *testing.T) {
+		for testName, test := range specTests {
+			server.Handle([]byte(test.j))
+
+			assert.Equal(t, test.statsSuccess, server.TotalSuccessResponses() -
+				previousValue, "%s: %s", testName, test.j)
+			previousValue = server.TotalSuccessResponses()
+		}
+	})
+
+	t.Run("HandleWithState", func(t *testing.T) {
+		for testName, test := range specTests {
+			server.HandleWithState([]byte(test.j), jsonrpc.State{})
+
+			assert.Equal(t, test.statsSuccess, server.TotalSuccessResponses() -
+				previousValue, "%s: %s", testName, test.j)
+			previousValue = server.TotalSuccessResponses()
+		}
+	})
+
+	t.Run("HandleRequest", func(t *testing.T) {
+		for testName, test := range specTests {
+			request, err := jsonrpc.NewRequestFromJSON([]byte(test.j))
+
+			// We are only testing single requests here so ignore the ones that
+			// are multi or invalid.
+			if err != nil {
+				continue
+			}
+
+			server.HandleRequest(request)
+
+			assert.Equal(t, test.statsSuccess, server.TotalSuccessResponses() -
+				previousValue, "%s: %s", testName, test.j)
+			previousValue = server.TotalSuccessResponses()
+		}
+	})
+}

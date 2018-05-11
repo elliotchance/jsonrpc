@@ -19,8 +19,9 @@ type SimpleServer struct {
 	requestHandlers map[string]RequestHandler
 
 	// See StatReporter
-	totalPayloads int
-	totalRequests int
+	totalPayloads         int
+	totalRequests         int
+	totalSuccessResponses int
 }
 
 // SetHandler will register (or replace) a handler for a method.
@@ -63,6 +64,12 @@ func (server *SimpleServer) GetHandler(methodName string) RequestHandler {
 // Handle() returns an array of Response interfaces to allow batch processing.
 // The "Batch Requests" second explains this in more detail.
 func (server *SimpleServer) HandleRequest(request RequestResponder) (response Response) {
+	defer func() {
+		if response.ErrorCode() == Success && request.Id() != nil {
+			server.totalSuccessResponses += 1
+		}
+	}()
+
 	server.totalPayloads += 1
 
 	// Always recover from a panic and send it back as an error.
