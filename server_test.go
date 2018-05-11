@@ -143,6 +143,7 @@ var specTests = map[string]struct {
 	r             jsonrpc.Responses // expectedResponses
 	statsPayloads int
 	statsRequests int
+	statsSuccess  int
 }{
 	"rpc call with positional parameters 1": {
 		j: `{"jsonrpc": "2.0", "method": "subtract", "params": [42, 23], "id": 1}`,
@@ -152,6 +153,7 @@ var specTests = map[string]struct {
 		},
 		statsPayloads: 1,
 		statsRequests: 1,
+		statsSuccess:  1,
 	},
 	"rpc call with positional parameters 2": {
 		j: `{"jsonrpc": "2.0", "method": "subtract", "params": [23, 42], "id": 2}`,
@@ -161,6 +163,7 @@ var specTests = map[string]struct {
 		},
 		statsPayloads: 1,
 		statsRequests: 1,
+		statsSuccess:  1,
 	},
 	"rpc call with named parameters 1": {
 		j: `{"jsonrpc": "2.0", "method": "subtract", "params": {"subtrahend": 23, "minuend": 42}, "id": 3}`,
@@ -170,6 +173,7 @@ var specTests = map[string]struct {
 		},
 		statsPayloads: 1,
 		statsRequests: 1,
+		statsSuccess:  1,
 	},
 	"rpc call with named parameters 2": {
 		j: `{"jsonrpc": "2.0", "method": "subtract", "params": {"minuend": 42, "subtrahend": 23}, "id": 4}`,
@@ -179,20 +183,23 @@ var specTests = map[string]struct {
 		},
 		statsPayloads: 1,
 		statsRequests: 1,
+		statsSuccess:  1,
 	},
 	"a notification 1": {
 		j: `{"jsonrpc": "2.0", "method": "subtract", "params": [1,2,3,4,5]}`,
 		// ``,
-		r: jsonrpc.Responses{},
+		r:             jsonrpc.Responses{},
 		statsPayloads: 1,
 		statsRequests: 1,
+		statsSuccess:  0,
 	},
 	"a notification 2": {
 		j: `{"jsonrpc": "2.0", "method": "subtract"}`,
 		// ``,
-		r: jsonrpc.Responses{},
+		r:             jsonrpc.Responses{},
 		statsPayloads: 1,
 		statsRequests: 1,
+		statsSuccess:  0,
 	},
 	"rpc call of non-existent method": {
 		j: `{"jsonrpc": "2.0", "method": "foobar", "id": 1}`,
@@ -202,6 +209,7 @@ var specTests = map[string]struct {
 		},
 		statsPayloads: 1,
 		statsRequests: 0,
+		statsSuccess:  0,
 	},
 	"rpc call with invalid JSON": {
 		j: `{"jsonrpc": "2.0", "method": "foobar, "params": "bar", "baz]`,
@@ -211,6 +219,7 @@ var specTests = map[string]struct {
 		},
 		statsPayloads: 1,
 		statsRequests: 0,
+		statsSuccess:  0,
 	},
 	"rpc call with invalid Request object": {
 		j: `{"jsonrpc": "2.0", "method": 1, "params": "bar"}`,
@@ -220,6 +229,7 @@ var specTests = map[string]struct {
 		},
 		statsPayloads: 1,
 		statsRequests: 0,
+		statsSuccess:  0,
 	},
 	"rpc call Batch, invalid JSON": {
 		j: `[
@@ -232,6 +242,7 @@ var specTests = map[string]struct {
 		},
 		statsPayloads: 1,
 		statsRequests: 0,
+		statsSuccess:  0,
 	},
 	"rpc call with an empty Array": {
 		j: `[]`,
@@ -241,6 +252,7 @@ var specTests = map[string]struct {
 		},
 		statsPayloads: 1,
 		statsRequests: 0,
+		statsSuccess:  0,
 	},
 	"rpc call with an invalid Batch (but not empty)": {
 		j: `[1]`,
@@ -250,6 +262,7 @@ var specTests = map[string]struct {
 		},
 		statsPayloads: 1,
 		statsRequests: 0,
+		statsSuccess:  0,
 	},
 	"rpc call with invalid Batch": {
 		j: `[1,2,3]`,
@@ -265,6 +278,7 @@ var specTests = map[string]struct {
 		},
 		statsPayloads: 1,
 		statsRequests: 0,
+		statsSuccess:  0,
 	},
 	"rpc call Batch": {
 		j: `[
@@ -291,6 +305,7 @@ var specTests = map[string]struct {
 		},
 		statsPayloads: 1,
 		statsRequests: 4,
+		statsSuccess:  3,
 	},
 	"rpc call Batch (all notifications)": {
 		j: `[
@@ -298,9 +313,10 @@ var specTests = map[string]struct {
 				{"jsonrpc": "2.0", "method": "notify_hello", "params": [7]}
 			]`,
 		// ``,
-		r: jsonrpc.Responses{},
+		r:             jsonrpc.Responses{},
 		statsPayloads: 1,
 		statsRequests: 2,
+		statsSuccess:  0,
 	},
 
 	// The tests below are extras for other edge cases not covered above.
@@ -312,6 +328,7 @@ var specTests = map[string]struct {
 		},
 		statsPayloads: 1,
 		statsRequests: 0,
+		statsSuccess:  0,
 	},
 	"bad version": {
 		j: `{"jsonrpc": true, "method": "subtract", "params": [42, 23], "id": 2}`,
@@ -321,6 +338,7 @@ var specTests = map[string]struct {
 		},
 		statsPayloads: 1,
 		statsRequests: 0,
+		statsSuccess:  0,
 	},
 	"missing version": {
 		j: `{"method": "subtract", "params": [42, 23], "id": 2}`,
@@ -330,6 +348,7 @@ var specTests = map[string]struct {
 		},
 		statsPayloads: 1,
 		statsRequests: 0,
+		statsSuccess:  0,
 	},
 
 	// The server much always recover from a panic(). We do not
@@ -343,6 +362,7 @@ var specTests = map[string]struct {
 		},
 		statsPayloads: 1,
 		statsRequests: 1,
+		statsSuccess:  0,
 	},
 }
 
