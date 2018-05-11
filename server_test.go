@@ -139,12 +139,13 @@ func TestSimpleServer_SetHandler(t *testing.T) {
 // All of these examples were provided from the official spec at:
 // http://www.jsonrpc.org/specification#examples
 var specTests = map[string]struct {
-	j             string            // input
-	r             jsonrpc.Responses // expectedResponses
-	statsPayloads int
-	statsRequests int
-	statsSuccess  int
-	statsError    int
+	j                         string            // input
+	r                         jsonrpc.Responses // expectedResponses
+	statsPayloads             int
+	statsRequests             int
+	statsSuccess              int
+	statsError                int
+	statsSuccessNotifications int
 }{
 	"rpc call with positional parameters 1": {
 		j: `{"jsonrpc": "2.0", "method": "subtract", "params": [42, 23], "id": 1}`,
@@ -152,10 +153,11 @@ var specTests = map[string]struct {
 		r: jsonrpc.Responses{
 			jsonrpc.NewSuccessResponse(float64(1), float64(19)),
 		},
-		statsPayloads: 1,
-		statsRequests: 1,
-		statsSuccess:  1,
-		statsError:    0,
+		statsPayloads:             1,
+		statsRequests:             1,
+		statsSuccess:              1,
+		statsError:                0,
+		statsSuccessNotifications: 0,
 	},
 	"rpc call with positional parameters 2": {
 		j: `{"jsonrpc": "2.0", "method": "subtract", "params": [23, 42], "id": 2}`,
@@ -163,10 +165,11 @@ var specTests = map[string]struct {
 		r: jsonrpc.Responses{
 			jsonrpc.NewSuccessResponse(float64(2), float64(-19)),
 		},
-		statsPayloads: 1,
-		statsRequests: 1,
-		statsSuccess:  1,
-		statsError:    0,
+		statsPayloads:             1,
+		statsRequests:             1,
+		statsSuccess:              1,
+		statsError:                0,
+		statsSuccessNotifications: 0,
 	},
 	"rpc call with named parameters 1": {
 		j: `{"jsonrpc": "2.0", "method": "subtract", "params": {"subtrahend": 23, "minuend": 42}, "id": 3}`,
@@ -174,10 +177,11 @@ var specTests = map[string]struct {
 		r: jsonrpc.Responses{
 			jsonrpc.NewSuccessResponse(float64(3), float64(19)),
 		},
-		statsPayloads: 1,
-		statsRequests: 1,
-		statsSuccess:  1,
-		statsError:    0,
+		statsPayloads:             1,
+		statsRequests:             1,
+		statsSuccess:              1,
+		statsError:                0,
+		statsSuccessNotifications: 0,
 	},
 	"rpc call with named parameters 2": {
 		j: `{"jsonrpc": "2.0", "method": "subtract", "params": {"minuend": 42, "subtrahend": 23}, "id": 4}`,
@@ -185,28 +189,31 @@ var specTests = map[string]struct {
 		r: jsonrpc.Responses{
 			jsonrpc.NewSuccessResponse(float64(4), float64(19)),
 		},
-		statsPayloads: 1,
-		statsRequests: 1,
-		statsSuccess:  1,
-		statsError:    0,
+		statsPayloads:             1,
+		statsRequests:             1,
+		statsSuccess:              1,
+		statsError:                0,
+		statsSuccessNotifications: 0,
 	},
 	"a notification 1": {
 		j: `{"jsonrpc": "2.0", "method": "subtract", "params": [1,2,3,4,5]}`,
 		// ``,
-		r:             jsonrpc.Responses{},
-		statsPayloads: 1,
-		statsRequests: 1,
-		statsSuccess:  0,
-		statsError:    0,
+		r:                         jsonrpc.Responses{},
+		statsPayloads:             1,
+		statsRequests:             1,
+		statsSuccess:              0,
+		statsError:                0,
+		statsSuccessNotifications: 1,
 	},
 	"a notification 2": {
 		j: `{"jsonrpc": "2.0", "method": "subtract"}`,
 		// ``,
-		r:             jsonrpc.Responses{},
-		statsPayloads: 1,
-		statsRequests: 1,
-		statsSuccess:  0,
-		statsError:    0,
+		r:                         jsonrpc.Responses{},
+		statsPayloads:             1,
+		statsRequests:             1,
+		statsSuccess:              0,
+		statsError:                0,
+		statsSuccessNotifications: 1,
 	},
 	"rpc call of non-existent method": {
 		j: `{"jsonrpc": "2.0", "method": "foobar", "id": 1}`,
@@ -214,10 +221,11 @@ var specTests = map[string]struct {
 		r: jsonrpc.Responses{
 			jsonrpc.NewErrorResponse(float64(1), jsonrpc.MethodNotFound, ""),
 		},
-		statsPayloads: 1,
-		statsRequests: 0,
-		statsSuccess:  0,
-		statsError:    1,
+		statsPayloads:             1,
+		statsRequests:             0,
+		statsSuccess:              0,
+		statsError:                1,
+		statsSuccessNotifications: 0,
 	},
 	"rpc call with invalid JSON": {
 		j: `{"jsonrpc": "2.0", "method": "foobar, "params": "bar", "baz]`,
@@ -225,10 +233,11 @@ var specTests = map[string]struct {
 		r: jsonrpc.Responses{
 			jsonrpc.NewErrorResponse(nil, jsonrpc.ParseError, ""),
 		},
-		statsPayloads: 1,
-		statsRequests: 0,
-		statsSuccess:  0,
-		statsError:    1,
+		statsPayloads:             1,
+		statsRequests:             0,
+		statsSuccess:              0,
+		statsError:                1,
+		statsSuccessNotifications: 0,
 	},
 	"rpc call with invalid Request object": {
 		j: `{"jsonrpc": "2.0", "method": 1, "params": "bar"}`,
@@ -236,10 +245,11 @@ var specTests = map[string]struct {
 		r: jsonrpc.Responses{
 			jsonrpc.NewErrorResponse(nil, jsonrpc.InvalidRequest, "Method must be a string."),
 		},
-		statsPayloads: 1,
-		statsRequests: 0,
-		statsSuccess:  0,
-		statsError:    1,
+		statsPayloads:             1,
+		statsRequests:             0,
+		statsSuccess:              0,
+		statsError:                1,
+		statsSuccessNotifications: 0,
 	},
 	"rpc call Batch, invalid JSON": {
 		j: `[
@@ -250,10 +260,11 @@ var specTests = map[string]struct {
 		r: jsonrpc.Responses{
 			jsonrpc.NewErrorResponse(nil, jsonrpc.ParseError, ""),
 		},
-		statsPayloads: 1,
-		statsRequests: 0,
-		statsSuccess:  0,
-		statsError:    1,
+		statsPayloads:             1,
+		statsRequests:             0,
+		statsSuccess:              0,
+		statsError:                1,
+		statsSuccessNotifications: 0,
 	},
 	"rpc call with an empty Array": {
 		j: `[]`,
@@ -261,10 +272,11 @@ var specTests = map[string]struct {
 		r: jsonrpc.Responses{
 			jsonrpc.NewErrorResponse(nil, jsonrpc.InvalidRequest, "Batch is empty."),
 		},
-		statsPayloads: 1,
-		statsRequests: 0,
-		statsSuccess:  0,
-		statsError:    1,
+		statsPayloads:             1,
+		statsRequests:             0,
+		statsSuccess:              0,
+		statsError:                1,
+		statsSuccessNotifications: 0,
 	},
 	"rpc call with an invalid Batch (but not empty)": {
 		j: `[1]`,
@@ -272,10 +284,11 @@ var specTests = map[string]struct {
 		r: jsonrpc.Responses{
 			jsonrpc.NewErrorResponse(nil, jsonrpc.InvalidRequest, ""),
 		},
-		statsPayloads: 1,
-		statsRequests: 0,
-		statsSuccess:  0,
-		statsError:    1,
+		statsPayloads:             1,
+		statsRequests:             0,
+		statsSuccess:              0,
+		statsError:                1,
+		statsSuccessNotifications: 0,
 	},
 	"rpc call with invalid Batch": {
 		j: `[1,2,3]`,
@@ -289,10 +302,11 @@ var specTests = map[string]struct {
 			jsonrpc.NewErrorResponse(nil, jsonrpc.InvalidRequest, ""),
 			jsonrpc.NewErrorResponse(nil, jsonrpc.InvalidRequest, ""),
 		},
-		statsPayloads: 1,
-		statsRequests: 0,
-		statsSuccess:  0,
-		statsError:    3,
+		statsPayloads:             1,
+		statsRequests:             0,
+		statsSuccess:              0,
+		statsError:                3,
+		statsSuccessNotifications: 0,
 	},
 	"rpc call Batch": {
 		j: `[
@@ -317,10 +331,11 @@ var specTests = map[string]struct {
 			jsonrpc.NewErrorResponse(float64(5), jsonrpc.MethodNotFound, ""),
 			jsonrpc.NewSuccessResponse(float64(9), []interface{}{"hello", float64(5)}),
 		},
-		statsPayloads: 1,
-		statsRequests: 4,
-		statsSuccess:  3,
-		statsError:    2,
+		statsPayloads:             1,
+		statsRequests:             4,
+		statsSuccess:              3,
+		statsError:                2,
+		statsSuccessNotifications: 1,
 	},
 	"rpc call Batch (all notifications)": {
 		j: `[
@@ -328,11 +343,12 @@ var specTests = map[string]struct {
 				{"jsonrpc": "2.0", "method": "notify_hello", "params": [7]}
 			]`,
 		// ``,
-		r:             jsonrpc.Responses{},
-		statsPayloads: 1,
-		statsRequests: 2,
-		statsSuccess:  0,
-		statsError:    0,
+		r:                         jsonrpc.Responses{},
+		statsPayloads:             1,
+		statsRequests:             2,
+		statsSuccess:              0,
+		statsError:                0,
+		statsSuccessNotifications: 2,
 	},
 
 	// The tests below are extras for other edge cases not covered above.
@@ -342,10 +358,11 @@ var specTests = map[string]struct {
 		r: jsonrpc.Responses{
 			jsonrpc.NewErrorResponse(float64(2), jsonrpc.InvalidRequest, "Version is not 2.0."),
 		},
-		statsPayloads: 1,
-		statsRequests: 0,
-		statsSuccess:  0,
-		statsError:    1,
+		statsPayloads:             1,
+		statsRequests:             0,
+		statsSuccess:              0,
+		statsError:                1,
+		statsSuccessNotifications: 0,
 	},
 	"bad version": {
 		j: `{"jsonrpc": true, "method": "subtract", "params": [42, 23], "id": 2}`,
@@ -353,10 +370,11 @@ var specTests = map[string]struct {
 		r: jsonrpc.Responses{
 			jsonrpc.NewErrorResponse(float64(2), jsonrpc.InvalidRequest, "Version (jsonrpc) must be a string."),
 		},
-		statsPayloads: 1,
-		statsRequests: 0,
-		statsSuccess:  0,
-		statsError:    1,
+		statsPayloads:             1,
+		statsRequests:             0,
+		statsSuccess:              0,
+		statsError:                1,
+		statsSuccessNotifications: 0,
 	},
 	"missing version": {
 		j: `{"method": "subtract", "params": [42, 23], "id": 2}`,
@@ -364,10 +382,11 @@ var specTests = map[string]struct {
 		r: jsonrpc.Responses{
 			jsonrpc.NewErrorResponse(float64(2), jsonrpc.InvalidRequest, "Version (jsonrpc) must be a string."),
 		},
-		statsPayloads: 1,
-		statsRequests: 0,
-		statsSuccess:  0,
-		statsError:    1,
+		statsPayloads:             1,
+		statsRequests:             0,
+		statsSuccess:              0,
+		statsError:                1,
+		statsSuccessNotifications: 0,
 	},
 
 	// The server much always recover from a panic(). We do not
@@ -379,10 +398,11 @@ var specTests = map[string]struct {
 		r: jsonrpc.Responses{
 			jsonrpc.NewErrorResponse(float64(2), jsonrpc.ServerError, ""),
 		},
-		statsPayloads: 1,
-		statsRequests: 1,
-		statsSuccess:  0,
-		statsError:    1,
+		statsPayloads:             1,
+		statsRequests:             1,
+		statsSuccess:              0,
+		statsError:                1,
+		statsSuccessNotifications: 0,
 	},
 }
 
