@@ -83,6 +83,7 @@ func (server *SimpleServer) HandleRequest(request RequestResponder) (response Re
 		return request.NewErrorResponse(MethodNotFound, "")
 	}
 
+	server.totalRequests += 1
 	return handler(request)
 }
 
@@ -144,24 +145,24 @@ func (server *SimpleServer) HandleWithState(jsonRequest []byte, state State) Res
 	var batchRequest []interface{}
 	err := json.Unmarshal(jsonRequest, &batchRequest)
 	if err == nil {
-		// It is a batch request, make sure it is not empty. Normally I
-		// wouldn't care and happily return an empty array of results
-		// back but the JSON-RPC spec says this is an invalid request.
+		// It is a batch request, make sure it is not empty. Normally I wouldn't
+		// care and happily return an empty array of results back but the
+		// JSON-RPC spec says this is an invalid request.
 		if len(batchRequest) == 0 {
 			return Responses{NewErrorResponse(nil, InvalidRequest,
 				"Batch is empty.")}
 		}
 
-		// Validate each of the requests because some of them may be
-		// good and some invalid.
+		// Validate each of the requests because some of them may be good and
+		// some invalid.
 		for _, probableRequest := range batchRequest {
-			// We have to mashal each request back to JSON, then
-			// treat each one as an independent request.
+			// We have to marshall each request back to JSON, then treat each
+			// one as an independent request.
 			rawMessage, err := json.Marshal(probableRequest)
 			if err != nil {
-				// This condition should not be possible since
-				// we have already unmarshalled this object
-				// once. Still, better to be safe than sorry.
+				// This condition should not be possible since we have already
+				// unmarshalled this object once. Still, better to be safe than
+				// sorry.
 				response := NewErrorResponse(nil, ParseError,
 					err.Error())
 				appendResponseIfNeeded(&responses, response)
