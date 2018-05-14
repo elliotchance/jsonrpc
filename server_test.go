@@ -146,6 +146,7 @@ var specTests = map[string]struct {
 	statsSuccess              int
 	statsError                int
 	statsSuccessNotifications int
+	statsErrorNotifications   int
 }{
 	"rpc call with positional parameters 1": {
 		j: `{"jsonrpc": "2.0", "method": "subtract", "params": [42, 23], "id": 1}`,
@@ -158,6 +159,7 @@ var specTests = map[string]struct {
 		statsSuccess:              1,
 		statsError:                0,
 		statsSuccessNotifications: 0,
+		statsErrorNotifications:   0,
 	},
 	"rpc call with positional parameters 2": {
 		j: `{"jsonrpc": "2.0", "method": "subtract", "params": [23, 42], "id": 2}`,
@@ -170,6 +172,7 @@ var specTests = map[string]struct {
 		statsSuccess:              1,
 		statsError:                0,
 		statsSuccessNotifications: 0,
+		statsErrorNotifications:   0,
 	},
 	"rpc call with named parameters 1": {
 		j: `{"jsonrpc": "2.0", "method": "subtract", "params": {"subtrahend": 23, "minuend": 42}, "id": 3}`,
@@ -182,6 +185,7 @@ var specTests = map[string]struct {
 		statsSuccess:              1,
 		statsError:                0,
 		statsSuccessNotifications: 0,
+		statsErrorNotifications:   0,
 	},
 	"rpc call with named parameters 2": {
 		j: `{"jsonrpc": "2.0", "method": "subtract", "params": {"minuend": 42, "subtrahend": 23}, "id": 4}`,
@@ -194,6 +198,7 @@ var specTests = map[string]struct {
 		statsSuccess:              1,
 		statsError:                0,
 		statsSuccessNotifications: 0,
+		statsErrorNotifications:   0,
 	},
 	"a notification 1": {
 		j: `{"jsonrpc": "2.0", "method": "subtract", "params": [1,2,3,4,5]}`,
@@ -204,6 +209,7 @@ var specTests = map[string]struct {
 		statsSuccess:              0,
 		statsError:                0,
 		statsSuccessNotifications: 1,
+		statsErrorNotifications:   0,
 	},
 	"a notification 2": {
 		j: `{"jsonrpc": "2.0", "method": "subtract"}`,
@@ -214,6 +220,7 @@ var specTests = map[string]struct {
 		statsSuccess:              0,
 		statsError:                0,
 		statsSuccessNotifications: 1,
+		statsErrorNotifications:   0,
 	},
 	"rpc call of non-existent method": {
 		j: `{"jsonrpc": "2.0", "method": "foobar", "id": 1}`,
@@ -226,6 +233,7 @@ var specTests = map[string]struct {
 		statsSuccess:              0,
 		statsError:                1,
 		statsSuccessNotifications: 0,
+		statsErrorNotifications:   0,
 	},
 	"rpc call with invalid JSON": {
 		j: `{"jsonrpc": "2.0", "method": "foobar, "params": "bar", "baz]`,
@@ -238,6 +246,7 @@ var specTests = map[string]struct {
 		statsSuccess:              0,
 		statsError:                1,
 		statsSuccessNotifications: 0,
+		statsErrorNotifications:   0,
 	},
 	"rpc call with invalid Request object": {
 		j: `{"jsonrpc": "2.0", "method": 1, "params": "bar"}`,
@@ -250,6 +259,7 @@ var specTests = map[string]struct {
 		statsSuccess:              0,
 		statsError:                1,
 		statsSuccessNotifications: 0,
+		statsErrorNotifications:   0,
 	},
 	"rpc call Batch, invalid JSON": {
 		j: `[
@@ -265,6 +275,7 @@ var specTests = map[string]struct {
 		statsSuccess:              0,
 		statsError:                1,
 		statsSuccessNotifications: 0,
+		statsErrorNotifications:   0,
 	},
 	"rpc call with an empty Array": {
 		j: `[]`,
@@ -277,6 +288,7 @@ var specTests = map[string]struct {
 		statsSuccess:              0,
 		statsError:                1,
 		statsSuccessNotifications: 0,
+		statsErrorNotifications:   0,
 	},
 	"rpc call with an invalid Batch (but not empty)": {
 		j: `[1]`,
@@ -289,6 +301,7 @@ var specTests = map[string]struct {
 		statsSuccess:              0,
 		statsError:                1,
 		statsSuccessNotifications: 0,
+		statsErrorNotifications:   0,
 	},
 	"rpc call with invalid Batch": {
 		j: `[1,2,3]`,
@@ -307,6 +320,7 @@ var specTests = map[string]struct {
 		statsSuccess:              0,
 		statsError:                3,
 		statsSuccessNotifications: 0,
+		statsErrorNotifications:   0,
 	},
 	"rpc call Batch": {
 		j: `[
@@ -336,6 +350,7 @@ var specTests = map[string]struct {
 		statsSuccess:              3,
 		statsError:                2,
 		statsSuccessNotifications: 1,
+		statsErrorNotifications:   0,
 	},
 	"rpc call Batch (all notifications)": {
 		j: `[
@@ -349,6 +364,7 @@ var specTests = map[string]struct {
 		statsSuccess:              0,
 		statsError:                0,
 		statsSuccessNotifications: 2,
+		statsErrorNotifications:   0,
 	},
 
 	// The tests below are extras for other edge cases not covered above.
@@ -363,6 +379,7 @@ var specTests = map[string]struct {
 		statsSuccess:              0,
 		statsError:                1,
 		statsSuccessNotifications: 0,
+		statsErrorNotifications:   0,
 	},
 	"bad version": {
 		j: `{"jsonrpc": true, "method": "subtract", "params": [42, 23], "id": 2}`,
@@ -375,6 +392,7 @@ var specTests = map[string]struct {
 		statsSuccess:              0,
 		statsError:                1,
 		statsSuccessNotifications: 0,
+		statsErrorNotifications:   0,
 	},
 	"missing version": {
 		j: `{"method": "subtract", "params": [42, 23], "id": 2}`,
@@ -387,6 +405,27 @@ var specTests = map[string]struct {
 		statsSuccess:              0,
 		statsError:                1,
 		statsSuccessNotifications: 0,
+		statsErrorNotifications:   0,
+	},
+	"rpc call of non-existent method as notification": {
+		j:                         `{"jsonrpc": "2.0", "method": "foobar"}`,
+		r:                         jsonrpc.Responses{},
+		statsPayloads:             1,
+		statsRequests:             0,
+		statsSuccess:              0,
+		statsError:                0,
+		statsSuccessNotifications: 0,
+		statsErrorNotifications:   1,
+	},
+	"a panic notification": {
+		j:                         `{"jsonrpc": "2.0", "method": "panic"}`,
+		r:                         jsonrpc.Responses{},
+		statsPayloads:             1,
+		statsRequests:             1,
+		statsSuccess:              0,
+		statsError:                0,
+		statsSuccessNotifications: 0,
+		statsErrorNotifications:   1,
 	},
 
 	// The server much always recover from a panic(). We do not
@@ -403,17 +442,20 @@ var specTests = map[string]struct {
 		statsSuccess:              0,
 		statsError:                1,
 		statsSuccessNotifications: 0,
+		statsErrorNotifications:   0,
 	},
 }
 
 func TestJSONRPCSpecification(t *testing.T) {
 	for testName, test := range specTests {
 		t.Run(testName, func(t *testing.T) {
-			server := newTestServer()
-			responses := server.Handle([]byte(test.j))
+			if testName == "rpc call with positional parameters 1" {
+				server := newTestServer()
+				responses := server.Handle([]byte(test.j))
 
-			if !reflect.DeepEqual(responses, test.r) {
-				t.Errorf("TestJSONRPCSpecification: %v != %v", responses, test.r)
+				if !reflect.DeepEqual(responses, test.r) {
+					t.Errorf("TestJSONRPCSpecification:\n%v\n%v", responses, test.r)
+				}
 			}
 		})
 	}
