@@ -9,7 +9,7 @@ type RequestHandler func(RequestResponder) Response
 
 type Server interface {
 	SetHandler(methodName string, handler RequestHandler)
-	HandleRequest(request RequestResponder) Response
+	HandleRequest(request RequestResponder) Responses
 	Handle(jsonRequest []byte) Responses
 	HandleWithState(jsonRequest []byte, state State) Responses
 	GetHandler(methodName string) RequestHandler
@@ -24,6 +24,7 @@ type SimpleServer struct {
 	totalSuccessResponses     int
 	totalErrorResponses       int
 	totalSuccessNotifications int
+	totalErrorNotifications   int
 }
 
 // SetHandler will register (or replace) a handler for a method.
@@ -65,8 +66,11 @@ func (server *SimpleServer) GetHandler(methodName string) RequestHandler {
 //
 // Handle() returns an array of Response interfaces to allow batch processing.
 // The "Batch Requests" second explains this in more detail.
-func (server *SimpleServer) HandleRequest(request RequestResponder) (response Response) {
+func (server *SimpleServer) HandleRequest(request RequestResponder) (responses Responses) {
 	server.totalPayloads += 1
+
+	responses = make(Responses, 0)
+	var response Response
 
 	// Always recover from a panic and send it back as an error.
 	defer func(id interface{}) {
@@ -75,38 +79,51 @@ func (server *SimpleServer) HandleRequest(request RequestResponder) (response Re
 		}
 
 		// Track responses.
-		switch {
-		case id == nil:
-			server.totalSuccessNotifications += 1
-		case response.ErrorCode() == Success:
-			server.totalSuccessResponses += 1
-		default:
-			server.totalErrorResponses += 1
+		if id == nil {
+			if response.ErrorCode() == Success {
+				server.totalSuccessNotifications += 1
+			} else {
+				server.totalErrorNotifications += 1
+			}
+		} else {
+			if response.ErrorCode() == Success {
+				server.totalSuccessResponses += 1
+			} else {
+				server.totalErrorResponses += 1
+			}
 		}
+
+		appendResponses(&responses, response)
 	}(request.Id())
 
 	// We only support 2.0 right now.
 	if request.Version() != "2.0" {
-		return request.NewErrorResponse(InvalidRequest, "Version is not 2.0.")
+		response = request.NewErrorResponse(InvalidRequest, "Version is not 2.0.")
+		return
 	}
 
 	handler := server.requestHandlers[request.Method()]
 	if handler == nil {
-		return request.NewErrorResponse(MethodNotFound, "")
+		response = request.NewErrorResponse(MethodNotFound, "")
+		return
 	}
 
 	server.totalRequests += 1
-	return handler(request)
+	response = handler(request)
+	return
 }
 
-func (server *SimpleServer) handleSingle(jsonRequest []byte, isPartOfBatch bool, state State) Response {
+func (server *SimpleServer) handleSingle(jsonRequest []byte, isPartOfBatch bool, state State) Responses {
 	request, id, errCode, errMessage :=
 		newRequestResponderFromJSON(jsonRequest, isPartOfBatch, state)
 
 	if errCode != Success {
 		server.totalErrorResponses += 1
 
-		return NewErrorResponse(id, errCode, errMessage)
+		responses := Responses{}
+		appendResponses(&responses, NewErrorResponse(id, errCode, errMessage))
+		// responses = append(responses, NewErrorResponse(id, errCode, errMessage))
+		return responses
 	}
 
 	// HandleRequest will increment the totalPayloads because it is part of the
@@ -117,9 +134,9 @@ func (server *SimpleServer) handleSingle(jsonRequest []byte, isPartOfBatch bool,
 	return server.HandleRequest(request)
 }
 
-func appendResponseIfNeeded(responses *Responses, response Response) {
-	// Notifications do not receive results
-	if response.Id() != nil || response.ErrorCode() != Success {
+func appendResponses(responses *Responses, response Response) {
+	// Notifications do not receive results.
+	if response.Id() != nil {
 		*responses = append(*responses, response)
 	}
 }
@@ -180,16 +197,20 @@ func (server *SimpleServer) HandleWithState(jsonRequest []byte, state State) Res
 				// unmarshalled this object once. Still, better to be safe than
 				// sorry.
 				response := NewErrorResponse(nil, ParseError, err.Error())
-				appendResponseIfNeeded(&responses, response)
+				responses = append(responses, response)
 				continue
 			}
 
-			response := server.handleSingle(rawMessage, true, state)
-			appendResponseIfNeeded(&responses, response)
+			results := server.handleSingle(rawMessage, true, state)
+			for _, response := range results {
+				appendResponses(&responses, response)
+			}
 		}
 	} else {
-		response := server.handleSingle(jsonRequest, false, state)
-		appendResponseIfNeeded(&responses, response)
+		results := server.handleSingle(jsonRequest, false, state)
+		for _, response := range results {
+			appendResponses(&responses, response)
+		}
 	}
 
 	return responses
