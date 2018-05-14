@@ -4,6 +4,7 @@ import (
 	"testing"
 	"github.com/stretchr/testify/assert"
 	"github.com/elliotchance/jsonrpc"
+	"time"
 )
 
 func TestSimpleServer_TotalPayloads(t *testing.T) {
@@ -15,7 +16,7 @@ func TestSimpleServer_TotalPayloads(t *testing.T) {
 		for testName, test := range specTests {
 			server.Handle([]byte(test.j))
 
-			assert.Equal(t, test.statsPayloads,server.TotalPayloads() -
+			assert.Equal(t, test.statsPayloads, server.TotalPayloads()-
 				previousValue, "%s: %s", testName, test.j)
 			previousValue = server.TotalPayloads()
 		}
@@ -25,7 +26,7 @@ func TestSimpleServer_TotalPayloads(t *testing.T) {
 		for testName, test := range specTests {
 			server.HandleWithState([]byte(test.j), jsonrpc.State{})
 
-			assert.Equal(t, test.statsPayloads, server.TotalPayloads() -
+			assert.Equal(t, test.statsPayloads, server.TotalPayloads()-
 				previousValue, "%s: %s", testName, test.j)
 			previousValue = server.TotalPayloads()
 		}
@@ -43,7 +44,7 @@ func TestSimpleServer_TotalPayloads(t *testing.T) {
 
 			server.HandleRequest(request)
 
-			assert.Equal(t, test.statsPayloads, server.TotalPayloads() -
+			assert.Equal(t, test.statsPayloads, server.TotalPayloads()-
 				previousValue, "%s: %s", testName, test.j)
 			previousValue = server.TotalPayloads()
 		}
@@ -59,7 +60,7 @@ func TestSimpleServer_TotalRequests(t *testing.T) {
 		for testName, test := range specTests {
 			server.Handle([]byte(test.j))
 
-			assert.Equal(t, test.statsRequests, server.TotalRequests() -
+			assert.Equal(t, test.statsRequests, server.TotalRequests()-
 				previousValue, "%s: %s", testName, test.j)
 			previousValue = server.TotalRequests()
 		}
@@ -69,7 +70,7 @@ func TestSimpleServer_TotalRequests(t *testing.T) {
 		for testName, test := range specTests {
 			server.HandleWithState([]byte(test.j), jsonrpc.State{})
 
-			assert.Equal(t, test.statsRequests, server.TotalRequests() -
+			assert.Equal(t, test.statsRequests, server.TotalRequests()-
 				previousValue, "%s: %s", testName, test.j)
 			previousValue = server.TotalRequests()
 		}
@@ -87,7 +88,7 @@ func TestSimpleServer_TotalRequests(t *testing.T) {
 
 			server.HandleRequest(request)
 
-			assert.Equal(t, test.statsRequests, server.TotalRequests() -
+			assert.Equal(t, test.statsRequests, server.TotalRequests()-
 				previousValue, "%s: %s", testName, test.j)
 			previousValue = server.TotalRequests()
 		}
@@ -103,7 +104,7 @@ func TestSimpleServer_TotalSuccessResponses(t *testing.T) {
 		for testName, test := range specTests {
 			server.Handle([]byte(test.j))
 
-			assert.Equal(t, test.statsSuccess, server.TotalSuccessResponses() -
+			assert.Equal(t, test.statsSuccess, server.TotalSuccessResponses()-
 				previousValue, "%s: %s", testName, test.j)
 			previousValue = server.TotalSuccessResponses()
 		}
@@ -113,7 +114,7 @@ func TestSimpleServer_TotalSuccessResponses(t *testing.T) {
 		for testName, test := range specTests {
 			server.HandleWithState([]byte(test.j), jsonrpc.State{})
 
-			assert.Equal(t, test.statsSuccess, server.TotalSuccessResponses() -
+			assert.Equal(t, test.statsSuccess, server.TotalSuccessResponses()-
 				previousValue, "%s: %s", testName, test.j)
 			previousValue = server.TotalSuccessResponses()
 		}
@@ -131,7 +132,7 @@ func TestSimpleServer_TotalSuccessResponses(t *testing.T) {
 
 			server.HandleRequest(request)
 
-			assert.Equal(t, test.statsSuccess, server.TotalSuccessResponses() -
+			assert.Equal(t, test.statsSuccess, server.TotalSuccessResponses()-
 				previousValue, "%s: %s", testName, test.j)
 			previousValue = server.TotalSuccessResponses()
 		}
@@ -147,7 +148,7 @@ func TestSimpleServer_TotalErrorResponses(t *testing.T) {
 		for testName, test := range specTests {
 			server.Handle([]byte(test.j))
 
-			assert.Equal(t, test.statsError, server.TotalErrorResponses() -
+			assert.Equal(t, test.statsError, server.TotalErrorResponses()-
 				previousValue, "%s: %s", testName, test.j)
 			previousValue = server.TotalErrorResponses()
 		}
@@ -157,7 +158,7 @@ func TestSimpleServer_TotalErrorResponses(t *testing.T) {
 		for testName, test := range specTests {
 			server.HandleWithState([]byte(test.j), jsonrpc.State{})
 
-			assert.Equal(t, test.statsError, server.TotalErrorResponses() -
+			assert.Equal(t, test.statsError, server.TotalErrorResponses()-
 				previousValue, "%s: %s", testName, test.j)
 			previousValue = server.TotalErrorResponses()
 		}
@@ -175,7 +176,7 @@ func TestSimpleServer_TotalErrorResponses(t *testing.T) {
 
 			server.HandleRequest(request)
 
-			assert.Equal(t, test.statsError, server.TotalErrorResponses() -
+			assert.Equal(t, test.statsError, server.TotalErrorResponses()-
 				previousValue, "%s: %s", testName, test.j)
 			previousValue = server.TotalErrorResponses()
 		}
@@ -192,7 +193,7 @@ func TestSimpleServer_TotalNotificationSuccesses(t *testing.T) {
 			server.Handle([]byte(test.j))
 
 			assert.Equal(t, test.statsSuccessNotifications,
-				server.TotalNotificationSuccesses() - previousValue,
+				server.TotalNotificationSuccesses()-previousValue,
 				"%s: %s", testName, test.j)
 			previousValue = server.TotalNotificationSuccesses()
 		}
@@ -203,7 +204,7 @@ func TestSimpleServer_TotalNotificationSuccesses(t *testing.T) {
 			server.HandleWithState([]byte(test.j), jsonrpc.State{})
 
 			assert.Equal(t, test.statsSuccessNotifications,
-				server.TotalNotificationSuccesses() - previousValue,
+				server.TotalNotificationSuccesses()-previousValue,
 				"%s: %s", testName, test.j)
 			previousValue = server.TotalNotificationSuccesses()
 		}
@@ -222,7 +223,7 @@ func TestSimpleServer_TotalNotificationSuccesses(t *testing.T) {
 			server.HandleRequest(request)
 
 			assert.Equal(t, test.statsSuccessNotifications,
-				server.TotalNotificationSuccesses() - previousValue,
+				server.TotalNotificationSuccesses()-previousValue,
 				"%s: %s", testName, test.j)
 			previousValue = server.TotalNotificationSuccesses()
 		}
@@ -240,7 +241,7 @@ func TestSimpleServer_TotalNotificationErrors(t *testing.T) {
 				server.Handle([]byte(test.j))
 
 				assert.Equal(t, test.statsErrorNotifications,
-					server.TotalNotificationErrors() - previousValue,
+					server.TotalNotificationErrors()-previousValue,
 					"%s: %s", testName, test.j)
 				previousValue = server.TotalNotificationErrors()
 			}
@@ -252,7 +253,7 @@ func TestSimpleServer_TotalNotificationErrors(t *testing.T) {
 			server.HandleWithState([]byte(test.j), jsonrpc.State{})
 
 			assert.Equal(t, test.statsErrorNotifications,
-				server.TotalNotificationErrors() - previousValue,
+				server.TotalNotificationErrors()-previousValue,
 				"%s: %s", testName, test.j)
 			previousValue = server.TotalNotificationErrors()
 		}
@@ -271,9 +272,23 @@ func TestSimpleServer_TotalNotificationErrors(t *testing.T) {
 			server.HandleRequest(request)
 
 			assert.Equal(t, test.statsErrorNotifications,
-				server.TotalNotificationErrors() - previousValue,
+				server.TotalNotificationErrors()-previousValue,
 				"%s: %s", testName, test.j)
 			previousValue = server.TotalNotificationErrors()
 		}
+	})
+}
+
+func TestSimpleServer_Uptime(t *testing.T) {
+	server := newTestServer()
+
+	firstUptime := server.Uptime()
+	assert.True(t, firstUptime > 0)
+
+	t.Run("AfterMillisecond", func(t *testing.T) {
+		time.Sleep(time.Millisecond)
+
+		assert.True(t, server.Uptime() - firstUptime > 0)
+		assert.True(t, server.Uptime() - firstUptime < 10 * time.Millisecond)
 	})
 }
