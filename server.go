@@ -2,6 +2,7 @@ package jsonrpc
 
 import (
 	"encoding/json"
+	"time"
 )
 
 // A handler is a function that is able to respond to a server request.
@@ -25,6 +26,7 @@ type SimpleServer struct {
 	totalErrorResponses       int
 	totalSuccessNotifications int
 	totalErrorNotifications   int
+	startTime                 time.Time
 }
 
 // SetHandler will register (or replace) a handler for a method.
@@ -229,8 +231,8 @@ func (server *SimpleServer) Handle(jsonRequest []byte) Responses {
 //     server := jsonrpc.NewSimpleServer()
 //     server.SetHandler("sayHello", sayHello)
 func NewSimpleServer() *SimpleServer {
-	server := new(SimpleServer)
-	server.requestHandlers = make(map[string]RequestHandler)
-
-	return server
+	return &SimpleServer{
+		requestHandlers: make(map[string]RequestHandler),
+		startTime:       time.Now(),
+	}
 }

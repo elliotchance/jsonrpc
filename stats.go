@@ -1,5 +1,7 @@
 package jsonrpc
 
+import "time"
+
 // StatReporter provides statistics for the JSON-RPC server.
 //
 // You can see examples for the each of the statistics against different message
@@ -46,6 +48,9 @@ type StatReporter interface {
 	// server that did not return a success from the handler. Malformed or
 	// invalid requests are not included in this count.
 	TotalNotificationErrors() int
+
+	// Uptime returns the duration that the server has been running for.
+	Uptime() time.Duration
 }
 
 func (server *SimpleServer) TotalPayloads() int {
@@ -70,4 +75,8 @@ func (server *SimpleServer) TotalNotificationSuccesses() int {
 
 func (server *SimpleServer) TotalNotificationErrors() int {
 	return server.totalErrorNotifications
+}
+
+func (server *SimpleServer) Uptime() time.Duration {
+	return time.Now().Sub(server.startTime)
 }
