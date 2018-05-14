@@ -37,9 +37,15 @@ type StatReporter interface {
 	// Parse error sent back which will only count as one error response.
 	TotalErrorResponses() int
 
-	// TotalSuccessNotifications returns the number of notifications to the
-	// server that returned success from the handler.
+	// TotalSuccessNotifications returns the number of notifications sent to the
+	// server that returned success from the handler. Malformed or invalid
+	// requests are not included in this count.
 	TotalNotificationSuccesses() int
+
+	// TotalNotificationErrors returns the number of notifications sent to the
+	// server that did not return a success from the handler. Malformed or
+	// invalid requests are not included in this count.
+	TotalNotificationErrors() int
 }
 
 func (server *SimpleServer) TotalPayloads() int {
@@ -60,4 +66,8 @@ func (server *SimpleServer) TotalErrorResponses() int {
 
 func (server *SimpleServer) TotalNotificationSuccesses() int {
 	return server.totalSuccessNotifications
+}
+
+func (server *SimpleServer) TotalNotificationErrors() int {
+	return server.totalErrorNotifications
 }
