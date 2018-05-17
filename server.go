@@ -3,6 +3,7 @@ package jsonrpc
 import (
 	"encoding/json"
 	"time"
+	"sync/atomic"
 )
 
 // A handler is a function that is able to respond to a server request.
@@ -20,13 +21,14 @@ type SimpleServer struct {
 	requestHandlers map[string]RequestHandler
 
 	// See StatReporter
-	totalPayloads             int
-	totalRequests             int
-	totalSuccessResponses     int
-	totalErrorResponses       int
-	totalSuccessNotifications int
-	totalErrorNotifications   int
+	totalPayloads             uint64
+	totalRequests             uint64
+	totalSuccessResponses     uint64
+	totalErrorResponses       uint64
+	totalSuccessNotifications uint64
+	totalErrorNotifications   uint64
 	startTime                 time.Time
+	currentActiveRequests     uint64
 }
 
 // SetHandler will register (or replace) a handler for a method.
@@ -111,7 +113,16 @@ func (server *SimpleServer) HandleRequest(request RequestResponder) (responses R
 	}
 
 	server.totalRequests += 1
+
+	defer func() {
+		// I know this seems a little crazy, but it's the correct way to
+		// subtract an integer atomically.
+		atomic.AddUint64(&server.currentActiveRequests, ^uint64(0))
+	}()
+
+	atomic.AddUint64(&server.currentActiveRequests, 1)
 	response = handler(request)
+
 	return
 }
 
@@ -124,7 +135,6 @@ func (server *SimpleServer) handleSingle(jsonRequest []byte, isPartOfBatch bool,
 
 		responses := Responses{}
 		appendResponses(&responses, NewErrorResponse(id, errCode, errMessage))
-		// responses = append(responses, NewErrorResponse(id, errCode, errMessage))
 		return responses
 	}
 
