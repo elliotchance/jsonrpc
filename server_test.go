@@ -141,12 +141,12 @@ func TestSimpleServer_SetHandler(t *testing.T) {
 var specTests = map[string]struct {
 	j                         string            // input
 	r                         jsonrpc.Responses // expectedResponses
-	statsPayloads             int
-	statsRequests             int
-	statsSuccess              int
-	statsError                int
-	statsSuccessNotifications int
-	statsErrorNotifications   int
+	statsPayloads             uint64
+	statsRequests             uint64
+	statsSuccess              uint64
+	statsError                uint64
+	statsSuccessNotifications uint64
+	statsErrorNotifications   uint64
 }{
 	"rpc call with positional parameters 1": {
 		j: `{"jsonrpc": "2.0", "method": "subtract", "params": [42, 23], "id": 1}`,
@@ -470,6 +470,7 @@ func newTestServer() *jsonrpc.SimpleServer {
 	server.SetHandler("get_data", getData)
 	server.SetHandler("panic", forcePanic)
 	server.SetHandler("handlerWithState", handlerWithState)
+	server.SetHandler("hangUntilChannel", hangUntilChannel)
 
 	return server
 }
@@ -498,6 +499,16 @@ func sum(request jsonrpc.RequestResponder) jsonrpc.Response {
 
 //noinspection GoUnusedParameter
 func notifyHello(request jsonrpc.RequestResponder) jsonrpc.Response {
+	return request.NewSuccessResponse(nil)
+}
+
+var hangStarted = make(chan bool)
+var waitForChannel = make(chan bool)
+
+func hangUntilChannel(request jsonrpc.RequestResponder) jsonrpc.Response {
+	hangStarted <- true
+	<-waitForChannel
+
 	return request.NewSuccessResponse(nil)
 }
 
